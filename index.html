@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#173f35">
+  <title>Administrasi Persuratan | SMP Negeri 13 Tasikmalaya</title>
+  <link rel="stylesheet" href="app.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#ringkasan" aria-label="Beranda">
+        <span class="brand-mark">13</span>
+        <span class="brand-copy"><strong>SMPN 13</strong><small>TASIKMALAYA</small></span>
+      </a>
+      <div class="sidebar-caption">PERSURATAN</div>
+      <nav class="primary-nav" aria-label="Navigasi utama">
+        <button class="nav-link is-active" data-page="overview"><span class="nav-glyph">⌂</span>Ringkasan</button>
+        <button class="nav-link" data-page="archive"><span class="nav-glyph">▤</span>Arsip surat tugas</button>
+        <button class="nav-link" data-page="agenda"><span class="nav-glyph">▦</span>Agenda surat</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <button class="nav-link" data-page="settings"><span class="nav-glyph">⚙</span>Pengaturan & data</button>
+        <div class="local-status"><span class="status-dot"></span><span>Data tersimpan di browser ini</span></div>
+      </div>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <div class="breadcrumb"><span>Administrasi</span><span class="breadcrumb-slash">/</span><strong id="page-breadcrumb">Ringkasan</strong></div>
+        <div class="topbar-actions">
+          <span class="today-label" id="today-label"></span>
+          <button class="button button-primary button-small" data-action="new-task"><span class="button-plus">+</span> Surat tugas</button>
+        </div>
+      </header>
+
+      <section class="page is-visible" id="page-overview" aria-labelledby="overview-title">
+        <div class="page-heading overview-heading">
+          <div><p class="eyebrow">BUKU ADMINISTRASI</p><h1 id="overview-title">Persuratan, tertata.</h1><p class="heading-note">SMP Negeri 13 Tasikmalaya <span class="note-divider">/</span> <span id="overview-year"></span></p></div>
+          <button class="button button-outline" data-action="new-incoming"><span class="button-plus">+</span> Catat surat masuk</button>
+        </div>
+
+        <div class="metrics-row">
+          <article class="metric"><span class="metric-label">Surat tugas</span><strong class="metric-value" id="metric-tasks">0</strong><span class="metric-foot">arsip terdaftar</span></article>
+          <article class="metric"><span class="metric-label">Surat masuk</span><strong class="metric-value" id="metric-incoming">0</strong><span class="metric-foot">agenda diterima</span></article>
+          <article class="metric"><span class="metric-label">Surat keluar</span><strong class="metric-value" id="metric-outgoing">0</strong><span class="metric-foot">termasuk surat tugas</span></article>
+          <article class="metric"><span class="metric-label">Guru tersedia</span><strong class="metric-value" id="metric-teachers">0</strong><span class="metric-foot">pilihan petugas</span></article>
+        </div>
+
+        <div class="overview-grid">
+          <section class="section-block recent-section">
+            <div class="section-heading"><div><p class="eyebrow">PEMUTAKHIRAN</p><h2>Arsip terbaru</h2></div><button class="text-button" data-page="archive">Lihat semua <span aria-hidden="true">→</span></button></div>
+            <div class="table-wrap"><table><thead><tr><th>Nomor surat tugas</th><th>Perihal / kegiatan</th><th>Tanggal</th><th>Petugas</th><th></th></tr></thead><tbody id="recent-task-rows"></tbody></table></div>
+            <div class="empty-state compact-empty" id="recent-empty"><span class="empty-mark">＋</span><strong>Belum ada arsip</strong><span>Surat tugas yang dibuat akan tampil di sini.</span><button class="text-button" data-action="new-task">Buat surat tugas <span aria-hidden="true">→</span></button></div>
+          </section>
+          <aside class="reference-panel">
+            <div class="number-panel-top"><span class="panel-icon">▤</span><span class="panel-label">MASTER DATA PENUGASAN</span></div>
+            <p class="number-panel-intro">Daftar pilihan formulir</p>
+            <strong class="reference-count"><span id="overview-teacher-count">0 guru</span><span id="overview-student-count">0 siswa</span></strong>
+            <div class="number-panel-rule"></div>
+            <p class="number-panel-note">Kelola daftar guru dan siswa sebagai sumber dropdown penugasan.</p>
+            <button class="button button-light" data-page="settings">Kelola master data <span aria-hidden="true">↗</span></button>
+          </aside>
+        </div>
+
+        <section class="section-block agenda-peek">
+          <div class="section-heading"><div><p class="eyebrow">BUKU AGENDA</p><h2>Aktivitas surat terkini</h2></div><button class="text-button" data-page="agenda">Buka agenda <span aria-hidden="true">→</span></button></div>
+          <div class="agenda-strip" id="recent-agenda"></div>
+        </section>
+      </section>
+
+      <section class="page" id="page-archive" aria-labelledby="archive-title">
+        <div class="page-heading">
+          <div><p class="eyebrow">DOKUMEN TERBIT</p><h1 id="archive-title">Arsip surat tugas</h1><p class="heading-note">Nomor, petugas, dan rincian kegiatan dalam satu daftar.</p></div>
+          <div class="heading-actions"><button class="button button-outline" data-action="print-archive"><span aria-hidden="true">▤</span> Cetak arsip</button><button class="button button-primary" data-action="new-task"><span class="button-plus">+</span> Buat surat tugas</button></div>
+        </div>
+        <div class="toolbar">
+          <label class="search-field"><span aria-hidden="true">⌕</span><input id="archive-search" type="search" placeholder="Cari nomor, perihal, petugas..." aria-label="Cari arsip surat tugas"></label>
+          <label class="select-label"><span>Tahun</span><select id="archive-year"><option value="all">Semua tahun</option></select></label>
+          <span class="toolbar-count" id="archive-count">0 arsip</span>
+        </div>
+        <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Nomor</th><th>Tanggal</th><th>Perihal</th><th>Petugas</th><th>Kegiatan / tujuan</th><th class="action-column">Aksi</th></tr></thead><tbody id="archive-rows"></tbody></table><div class="empty-state" id="archive-empty"><span class="empty-mark">▤</span><strong>Arsip belum tersedia</strong><span>Surat tugas yang diterbitkan akan tercatat di daftar ini.</span></div></div>
+      </section>
+
+      <section class="page" id="page-agenda" aria-labelledby="agenda-title">
+        <div class="page-heading">
+          <div><p class="eyebrow">SURAT MASUK & KELUAR</p><h1 id="agenda-title">Agenda surat</h1><p class="heading-note">Rekap korespondensi untuk pencatatan dan ekspor.</p></div>
+          <button class="button button-primary" id="agenda-add-button" data-action="new-incoming"><span class="button-plus">+</span> Catat surat masuk</button>
+        </div>
+        <div class="agenda-controls">
+          <div class="segmented" role="tablist" aria-label="Jenis agenda">
+            <button class="segment is-selected" role="tab" aria-selected="true" data-agenda-tab="incoming">Surat masuk <span id="incoming-tab-count">0</span></button>
+            <button class="segment" role="tab" aria-selected="false" data-agenda-tab="outgoing">Surat keluar <span id="outgoing-tab-count">0</span></button>
+          </div>
+          <div class="toolbar-inline">
+            <label class="search-field search-compact"><span aria-hidden="true">⌕</span><input id="agenda-search" type="search" placeholder="Cari agenda..." aria-label="Cari agenda surat"></label>
+            <button class="button button-outline" data-action="export-agenda"><span aria-hidden="true">↓</span> Ekspor CSV</button>
+          </div>
+        </div>
+        <div class="data-table-wrap"><table class="data-table"><thead id="agenda-head"></thead><tbody id="agenda-rows"></tbody></table><div class="empty-state" id="agenda-empty"><span class="empty-mark">▦</span><strong id="agenda-empty-title">Belum ada surat masuk</strong><span id="agenda-empty-copy">Catat surat yang diterima untuk mulai mengisi agenda.</span><button class="text-button" data-action="new-incoming">Catat surat masuk <span aria-hidden="true">→</span></button></div></div>
+      </section>
+
+      <section class="page" id="page-settings" aria-labelledby="settings-title">
+        <div class="page-heading"><div><p class="eyebrow">PREFERENSI LOKAL</p><h1 id="settings-title">Pengaturan & data</h1><p class="heading-note">Kelola master penugasan dan salinan arsip.</p></div></div>
+        <div class="settings-layout">
+          <section class="settings-section">
+            <div class="settings-title"><span class="settings-icon">S</span><div><h2>Pejabat penandatangan</h2><p>Nama dan NIP digunakan pada blok tanda tangan dokumen cetak.</p></div></div>
+            <form id="officials-form" class="officials-form">
+              <div class="official-fields">
+                <label class="field"><span>Nama Kepala Sekolah *</span><input name="principalName" type="text" required></label>
+                <label class="field"><span>NIP Kepala Sekolah</span><input name="principalNip" type="text"></label>
+                <label class="field"><span>Mulai tanggal berlaku</span><input name="principalStartDate" type="date" required></label>
+                <div class="official-history-wrap"><span class="official-history-label">Riwayat Kepala Sekolah</span><table class="official-history-table"><thead><tr><th>Mulai tanggal</th><th>Nama</th><th>NIP</th></tr></thead><tbody id="principal-history"></tbody></table></div>
+                <label class="field"><span>Nama Bendahara *</span><input name="treasurerName" type="text" required></label>
+                <label class="field"><span>NIP Bendahara</span><input name="treasurerNip" type="text"></label>
+                <label class="field"><span>Mulai tanggal berlaku</span><input name="treasurerStartDate" type="date" required></label>
+                <div class="official-history-wrap"><span class="official-history-label">Riwayat Bendahara</span><table class="official-history-table"><thead><tr><th>Mulai tanggal</th><th>Nama</th><th>NIP</th></tr></thead><tbody id="treasurer-history"></tbody></table></div>
+              </div>
+              <button class="button button-primary" type="submit">Simpan pejabat</button>
+            </form>
+          </section>
+          <section class="settings-section"><div class="settings-title"><span class="settings-icon">G</span><div><h2>Master guru & siswa</h2><p>Unduh format Excel untuk diisi, lalu unggah kembali sebagai data pilihan di formulir surat tugas.</p></div></div>
+            <div class="master-imports">
+              <div class="master-import-row"><div><strong>Data guru</strong><small id="teacher-master-count">0 guru</small><span>Kolom: No, Nama, NIP, Gol, PANGKAT, JABATAN</span></div><div class="master-actions"><button class="button button-outline" data-action="download-teacher-template">Unduh Excel</button><label class="button button-outline import-button">Unggah Excel / CSV<input id="teacher-master-input" data-master-type="teachers" type="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" hidden></label></div></div>
+              <div class="master-import-row"><div><strong>Data siswa</strong><small id="student-master-count">0 siswa</small><span>Kolom: No, Nama Siswa, Kelas</span></div><div class="master-actions"><button class="button button-outline" data-action="download-student-template">Unduh Excel</button><label class="button button-outline import-button">Unggah Excel / CSV<input id="student-master-input" data-master-type="students" type="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" hidden></label></div></div>
+            </div>
+            <p class="settings-hint master-hint">Isi data mulai baris kedua tanpa mengubah judul kolom. Impor Excel/CSV mengganti daftar master sebelumnya.</p>
+          </section>
+          <section class="settings-section"><div class="settings-title"><span class="settings-icon">↕</span><div><h2>Cadangan data</h2><p>Data disimpan lokal di browser ini, bukan di server.</p></div></div>
+            <div class="backup-actions"><button class="button button-outline" data-action="export-backup"><span aria-hidden="true">↓</span> Unduh cadangan JSON</button><label class="button button-outline import-button"><span aria-hidden="true">↑</span> Impor cadangan<input id="backup-input" type="file" accept="application/json,.json" hidden></label></div>
+            <p class="settings-hint">Gunakan cadangan untuk memindahkan arsip ke browser atau perangkat lain. CSV agenda dapat dibuka di spreadsheet.</p>
+          </section>
+          <div class="storage-notice"><span class="status-dot"></span><span><strong id="storage-record-count">0 catatan tersimpan</strong><br>Peramban yang berbeda tidak berbagi data secara otomatis.</span></div>
+        </div>
+      </section>
+      <footer class="app-footer"><span>Administrasi Persuratan</span><span>SMP Negeri 13 Tasikmalaya</span></footer>
+    </main>
+  </div>
+
+  <dialog id="record-dialog" class="record-dialog" aria-labelledby="dialog-title"><div class="dialog-frame"><header class="dialog-header"><div><p class="eyebrow" id="dialog-eyebrow">ARSIP BARU</p><h2 id="dialog-title">Buat surat tugas</h2></div><button type="button" class="icon-button" data-action="close-dialog" aria-label="Tutup">×</button></header><form id="record-form"><div class="dialog-body" id="form-fields"></div><footer class="dialog-footer"><span id="dialog-footnote">Nomor diisi manual sesuai arsip.</span><div><button type="button" class="button button-outline" data-action="close-dialog">Batal</button><button type="submit" class="button button-primary">Simpan arsip</button></div></footer></form></div></dialog>
+  <dialog id="print-dialog" class="record-dialog print-dialog" aria-labelledby="print-dialog-title"><div class="dialog-frame"><header class="dialog-header"><div><p class="eyebrow">DOKUMEN CETAK</p><h2 id="print-dialog-title">Pilih lembar</h2></div><button type="button" class="icon-button" data-action="close-print-dialog" aria-label="Tutup">×</button></header><div id="print-options" class="print-options">
+    <button class="print-option" data-print-type="task"><span class="print-option-number">01</span><span><strong>Surat Tugas</strong><small>Penugasan pegawai</small></span><span class="print-option-arrow">↗</span></button>
+    <button class="print-option" data-print-type="student"><span class="print-option-number">02</span><span><strong>Surat Tugas Siswa</strong><small>Penugasan peserta didik</small></span><span class="print-option-arrow">↗</span></button>
+    <button class="print-option" data-print-type="sppd"><span class="print-option-number">03</span><span><strong>SPPD</strong><small>Surat perintah perjalanan dinas</small></span><span class="print-option-arrow">↗</span></button>
+    <button class="print-option" data-print-type="sppd-continuation"><span class="print-option-number">04</span><span><strong>SPPD Lembar ke-2</strong><small>Catatan perjalanan</small></span><span class="print-option-arrow">↗</span></button>
+    <button class="print-option" data-print-type="nota"><span class="print-option-number">05</span><span><strong>Nota Dinas</strong><small>Laporan hasil pelaksanaan</small></span><span class="print-option-arrow">↗</span></button>
+    <button class="print-option" data-print-type="transport"><span class="print-option-number">06</span><span><strong>Daftar Penyerahan Transport</strong><small>Pegawai yang diberi tugas</small></span><span class="print-option-arrow">↗</span></button>
+    <button class="print-option" data-print-type="transport-students"><span class="print-option-number">07</span><span><strong>Daftar Penyerahan Transport Siswa</strong><small>Peserta didik yang diberi tugas</small></span><span class="print-option-arrow">↗</span></button>
+  </div></div></dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

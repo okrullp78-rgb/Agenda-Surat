@@ -1,0 +1,21 @@
+{
+  "name": "agenda-surat-smpn13",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0",
+    "papaparse": "^5.5.3"
+  },
+  "overrides": {
+    "uuid": "^11.1.1"
+  },
+  "devDependencies": {
+    "vite": "^7.0.0"
+  }
+}
