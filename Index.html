@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -276,6 +275,134 @@
       display: none;
     }
 
+    .jenis-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .jenis-kartu {
+      padding: 12px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: white;
+      color: #334155;
+      font-size: 13px;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .jenis-kartu:hover,
+    .jenis-kartu.active {
+      border-color: #0f766e;
+      background: #ccfbf1;
+      color: #115e59;
+      font-weight: bold;
+    }
+
+    .preview-wrap {
+      overflow: auto;
+      background: #e2e8f0;
+      padding: 16px;
+      border-radius: 10px;
+    }
+
+    .surat-kertas {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      padding: 20mm 20mm 20mm 25mm;
+      background: white;
+      color: #000;
+      box-shadow: 0 3px 12px rgba(15, 23, 42, .08);
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 12pt;
+      line-height: 1.6;
+    }
+
+    .kop-surat {
+      text-align: center;
+    }
+
+    .kop-nama {
+      font-size: 16pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+    }
+
+    .kop-info {
+      font-size: 11pt;
+      min-height: 1em;
+    }
+
+    .kop-garis {
+      border: none;
+      border-top: 3px solid #000;
+      margin: 8px 0 18px;
+    }
+
+    .meta-surat {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 18px;
+    }
+
+    .meta-surat td {
+      border: none;
+      padding: 1px 0;
+      vertical-align: top;
+      font-size: 12pt;
+    }
+
+    .meta-label {
+      width: 85px;
+      white-space: nowrap;
+    }
+
+    .meta-titik {
+      width: 14px;
+    }
+
+    .meta-kanan {
+      text-align: right;
+      white-space: nowrap;
+      width: 42%;
+    }
+
+    .tujuan-surat {
+      margin: 18px 0 24px 52%;
+    }
+
+    .isi-surat-teks,
+    .penutup-surat-teks {
+      white-space: pre-wrap;
+      text-align: justify;
+      margin: 0 0 16px;
+    }
+
+    .ttd-surat {
+      width: 42%;
+      margin-left: auto;
+      text-align: center;
+      margin-top: 28px;
+    }
+
+    .ttd-spasi {
+      height: 72px;
+    }
+
+    .tembusan-surat {
+      margin-top: 36px;
+      font-size: 11pt;
+    }
+
+    .btn.small {
+      padding: 7px 12px;
+      font-size: 12px;
+    }
+
     footer {
       padding: 20px;
       text-align: center;
@@ -319,6 +446,10 @@
       .field.full {
         grid-column: auto;
       }
+
+      .jenis-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
     }
 
     @media print {
@@ -347,15 +478,15 @@
         display: none !important;
       }
 
-      body.print-mode #laporan {
+      body.print-mode #agenda {
         display: block !important;
       }
 
-      body.print-mode #laporan .card {
+      body.print-mode #agenda .card {
         display: none !important;
       }
 
-      body.print-mode #laporan .report-print-area {
+      body.print-mode #agenda .report-print-area {
         display: block !important;
         padding: 0;
         margin: 0;
@@ -409,6 +540,57 @@
         padding: 0;
       }
 
+      body.print-surat header,
+      body.print-surat aside,
+      body.print-surat footer,
+      body.print-surat .no-print {
+        display: none !important;
+      }
+
+      body.print-surat .container {
+        display: block;
+        min-height: 0;
+      }
+
+      body.print-surat main {
+        padding: 0;
+      }
+
+      body.print-surat .page {
+        display: none !important;
+      }
+
+      body.print-surat #buatSuratKeluar {
+        display: block !important;
+      }
+
+      body.print-surat #buatSuratKeluar .card {
+        display: none !important;
+      }
+
+      body.print-surat #buatSuratKeluar .surat-print-area {
+        display: block !important;
+        padding: 0;
+        margin: 0;
+        background: white;
+        box-shadow: none;
+        border-radius: 0;
+      }
+
+      body.print-surat .preview-wrap {
+        overflow: visible;
+        background: white;
+        padding: 0;
+      }
+
+      body.print-surat .surat-kertas {
+        width: auto;
+        min-height: 0;
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+      }
+
       @page {
         size: landscape;
         margin: 12mm;
@@ -430,8 +612,9 @@
     <button class="menu active" data-page="dashboard">Dashboard</button>
     <button class="menu" data-page="suratMasuk">Surat Masuk</button>
     <button class="menu" data-page="suratKeluar">Surat Keluar</button>
+    <button class="menu" data-page="buatSuratKeluar">Buat Surat</button>
     <button class="menu" data-page="suratTugas">Surat Tugas</button>
-    <button class="menu" data-page="laporan">Laporan</button>
+    <button class="menu" data-page="agenda">Agenda Surat</button>
   </aside>
 
   <main>
@@ -479,9 +662,14 @@
       <h2 class="page-title">Surat Masuk</h2>
 
       <div class="card no-print">
-        <h3>Formulir Pencatatan Surat Masuk</h3>
+        <h3>
+          Formulir Pencatatan Surat Masuk
+          <span id="indikatorModeMasuk" class="badge" style="display:none; margin-left: 8px; background: #ccfbf1; color: #115e59; font-weight: normal; font-size: 12px;">Mode Edit</span>
+        </h3>
 
         <form id="formMasuk">
+          <input type="hidden" name="idSurat" id="idSuratMasuk">
+
           <div class="form-grid">
 
             <div class="field">
@@ -557,7 +745,11 @@
               Simpan Surat Masuk
             </button>
 
-            <button type="reset" class="btn secondary">
+            <button type="button" class="btn secondary" id="btnBatalEditMasuk" style="display:none;" onclick="batalEditSuratMasuk()">
+              Batal Edit
+            </button>
+
+            <button type="reset" class="btn secondary" id="btnResetMasuk" onclick="batalEditSuratMasuk()">
               Bersihkan Formulir
             </button>
           </div>
@@ -584,12 +776,13 @@
                 <th>Perihal</th>
                 <th>Status</th>
                 <th>Dokumen</th>
+                <th class="no-print">Aksi</th>
               </tr>
             </thead>
 
             <tbody id="tabelMasuk">
               <tr>
-                <td colspan="8" class="empty">Memuat data...</td>
+                <td colspan="9" class="empty">Memuat data...</td>
               </tr>
             </tbody>
           </table>
@@ -608,9 +801,14 @@
       <h2 class="page-title">Surat Keluar</h2>
 
       <div class="card no-print">
-        <h3>Formulir Pencatatan Surat Keluar</h3>
+        <h3>
+          Formulir Pencatatan Surat Keluar
+          <span id="indikatorModeKeluar" class="badge" style="display:none; margin-left: 8px; background: #ccfbf1; color: #115e59; font-weight: normal; font-size: 12px;">Mode Edit</span>
+        </h3>
 
         <form id="formKeluar">
+          <input type="hidden" name="idSurat" id="idSuratKeluarCatatan">
+
           <div class="form-grid">
 
             <div class="field">
@@ -685,7 +883,11 @@
               Simpan Surat Keluar
             </button>
 
-            <button type="reset" class="btn secondary">
+            <button type="button" class="btn secondary" id="btnBatalEditKeluar" style="display:none;" onclick="batalEditCatatanKeluar()">
+              Batal Edit
+            </button>
+
+            <button type="reset" class="btn secondary" id="btnResetKeluar" onclick="batalEditCatatanKeluar()">
               Bersihkan Formulir
             </button>
           </div>
@@ -713,21 +915,224 @@
                 <th>Penandatangan</th>
                 <th>Status</th>
                 <th>Dokumen</th>
+                <th class="no-print">Aksi</th>
               </tr>
             </thead>
 
             <tbody id="tabelKeluar">
               <tr>
-                <td colspan="9" class="empty">Memuat data...</td>
+                <td colspan="10" class="empty">Memuat data...</td>
               </tr>
             </tbody>
           </table>
         </div>
 
         <div class="actions no-print">
+          <button class="btn" onclick="bukaHalamanBuatSurat(true)">
+            Buat Surat Keluar
+          </button>
+
           <button class="btn" onclick="muatSuratKeluar()">
             Muat Ulang Data
           </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- PEMBUATAN SURAT KELUAR -->
+    <section id="buatSuratKeluar" class="page">
+      <h2 class="page-title no-print">Pembuatan Surat Keluar</h2>
+
+      <div class="actions no-print" style="margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between;">
+        <div>
+          <span id="labelModeBuatSurat" class="badge" style="background:#ccfbf1; color:#115e59; font-weight:bold; font-size:13px; padding:6px 12px;">
+            Mode: Surat Keluar Baru
+          </span>
+        </div>
+        <button type="button" class="btn small secondary" onclick="bukaHalamanBuatSurat(true)">
+          + Mulai Surat Baru
+        </button>
+      </div>
+
+      <div class="card no-print">
+        <h3>Pilih Jenis Surat</h3>
+        <p class="muted">
+          Pilih jenis surat, lalu isi formulir. Nomor surat diisi secara manual.
+        </p>
+
+        <div class="jenis-grid" id="jenisKartu"></div>
+
+        <div class="field">
+          <label>Jenis Surat</label>
+          <select id="jenisSurat" name="jenisSurat">
+            <option value="">Pilih jenis surat</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card no-print">
+        <h3>Formulir Pembuatan Surat</h3>
+
+        <form id="formBuatSurat">
+          <input type="hidden" name="idSurat" id="idSuratKeluar">
+
+          <div class="form-grid">
+            <div class="field">
+              <label>Nomor Surat *</label>
+              <input name="nomorSurat" required
+                placeholder="Isi nomor surat secara manual">
+            </div>
+
+            <div class="field">
+              <label>Tanggal Surat *</label>
+              <input type="date" name="tanggalSurat" required>
+            </div>
+
+            <div class="field">
+              <label>Lampiran</label>
+              <input name="lampiran"
+                placeholder="Contoh: 1 berkas (opsional)">
+            </div>
+
+            <div class="field full">
+              <label>Tujuan / Nama Penerima *</label>
+              <input name="tujuanSurat" required
+                placeholder="Nama instansi atau penerima">
+            </div>
+
+            <div class="field" id="fieldJabatanPenerima">
+              <label>Jabatan Penerima</label>
+              <input name="jabatanPenerima"
+                placeholder="Jabatan penerima, jika diperlukan">
+            </div>
+
+            <div class="field full">
+              <label>Perihal *</label>
+              <input name="perihal" required placeholder="Perihal surat">
+            </div>
+
+            <div class="field full">
+              <label>Isi Surat</label>
+              <textarea name="isiSurat" rows="8"
+                placeholder="Isi surat. Wajib diisi untuk pratinjau dan cetak. Boleh kosong saat menyimpan draft."></textarea>
+            </div>
+
+            <div class="field full">
+              <label>Penutup</label>
+              <textarea name="penutup" rows="3"
+                placeholder="Kalimat penutup (opsional)"></textarea>
+            </div>
+
+            <div class="field">
+              <label>Nama Penandatangan</label>
+              <input name="penandatangan"
+                placeholder="Nama pejabat penandatangan">
+            </div>
+
+            <div class="field">
+              <label>Jabatan Penandatangan</label>
+              <input name="jabatanPenandatangan"
+                placeholder="Jabatan penandatangan">
+            </div>
+
+            <div class="field">
+              <label>Status Surat</label>
+              <select name="status" id="statusBuatSurat">
+                <option>Draft</option>
+                <option>Siap Ditandatangani</option>
+                <option>Sudah Ditandatangani</option>
+                <option>Sudah Dikirim</option>
+                <option>Selesai</option>
+              </select>
+            </div>
+
+            <div class="field full" id="fieldTembusan">
+              <label>Tembusan</label>
+              <textarea name="tembusan" rows="3"
+                placeholder="Satu baris untuk setiap tembusan (opsional)"></textarea>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button type="button" class="btn" onclick="pratinjauSuratKeluar()">
+              Pratinjau Surat
+            </button>
+
+            <button type="button" class="btn" id="btnSimpanDraft"
+              onclick="simpanDraftSuratKeluarKlien()">
+              Simpan Surat
+            </button>
+
+            <button type="button" class="btn" onclick="cetakSuratKeluar()">
+              Cetak Surat
+            </button>
+
+            <button type="button" class="btn secondary"
+              onclick="kembaliKeDaftarSuratKeluar()">
+              Kembali ke Daftar Surat Keluar
+            </button>
+          </div>
+
+          <div id="pesanBuatSurat" class="message"></div>
+        </form>
+      </div>
+
+      <div class="card surat-print-area">
+        <h3 class="no-print">Pratinjau Surat</h3>
+        <p class="muted no-print">
+          Tampilan ini mengikuti format cetak kertas A4. Formulir dan menu
+          tidak ikut tercetak.
+        </p>
+
+        <div class="preview-wrap">
+          <article class="surat-kertas" id="lembarSurat">
+            <div class="kop-surat">
+              <div class="kop-nama" id="kopNama"></div>
+              <div class="kop-info" id="kopAlamat"></div>
+              <div class="kop-info" id="kopTelepon"></div>
+            </div>
+            <hr class="kop-garis">
+
+            <table class="meta-surat">
+              <tr>
+                <td class="meta-label">Nomor</td>
+                <td class="meta-titik">:</td>
+                <td id="pNomor"></td>
+                <td class="meta-kanan" id="pTempatTanggal"></td>
+              </tr>
+              <tr id="barisLampiran">
+                <td class="meta-label">Lampiran</td>
+                <td class="meta-titik">:</td>
+                <td id="pLampiran" colspan="2"></td>
+              </tr>
+              <tr>
+                <td class="meta-label">Perihal</td>
+                <td class="meta-titik">:</td>
+                <td id="pPerihal" colspan="2"></td>
+              </tr>
+            </table>
+
+            <div class="tujuan-surat">
+              <div>Kepada</div>
+              <div>Yth. <span id="pJabatanPenerima"></span></div>
+              <div id="pTujuan"></div>
+              <div>di Tempat</div>
+            </div>
+
+            <div class="isi-surat-teks" id="pIsi"></div>
+            <div class="penutup-surat-teks" id="pPenutup"></div>
+
+            <div class="ttd-surat">
+              <div id="pJabatanTtd"></div>
+              <div class="ttd-spasi"></div>
+              <div id="pNamaTtd"></div>
+            </div>
+
+            <div class="tembusan-surat" id="blokTembusan">
+              <div>Tembusan:</div>
+              <div id="pTembusan"></div>
+            </div>
+          </article>
         </div>
       </div>
     </section>
@@ -749,9 +1154,9 @@
       </div>
     </section>
 
-    <!-- LAPORAN -->
-    <section id="laporan" class="page">
-      <h2 class="page-title no-print">Laporan Agenda Surat</h2>
+    <!-- AGENDA SURAT -->
+    <section id="agenda" class="page">
+      <h2 class="page-title no-print">Agenda Surat</h2>
 
       <div class="card no-print">
         <h3>Filter Laporan</h3>
@@ -763,6 +1168,7 @@
               <option value="SEMUA">Semua Surat</option>
               <option value="MASUK">Surat Masuk</option>
               <option value="KELUAR">Surat Keluar</option>
+              <option value="TUGAS">Surat Tugas</option>
             </select>
           </div>
 
@@ -876,8 +1282,11 @@
 
       button.classList.add('active');
 
-      document.getElementById(button.dataset.page)
-        .classList.add('active');
+      var halamanAktif = document.getElementById(button.dataset.page);
+
+      if (halamanAktif) {
+        halamanAktif.classList.add('active');
+      }
 
       if (button.dataset.page === 'dashboard') {
         muatDashboard();
@@ -891,7 +1300,11 @@
         muatSuratKeluar();
       }
 
-      if (button.dataset.page === 'laporan') {
+      if (button.dataset.page === 'buatSuratKeluar') {
+        bukaHalamanBuatSurat(true);
+      }
+
+      if (button.dataset.page === 'agenda') {
         muatDataLaporan();
       }
     });
@@ -929,6 +1342,33 @@
     elemen.textContent = teks;
   }
 
+  // Memastikan status tersimpan selalu tersedia pada select status,
+  // agar status final tidak diam-diam kembali menjadi Draft saat diedit.
+  function pastikanOpsiStatusSurat(select, nilai) {
+    if (!select) return;
+
+    var status = String(nilai || '').trim();
+    if (!status) return;
+
+    var ada = false;
+
+    for (var i = 0; i < select.options.length; i++) {
+      if (select.options[i].value === status) {
+        ada = true;
+        break;
+      }
+    }
+
+    if (!ada) {
+      var opsi = document.createElement('option');
+      opsi.value = status;
+      opsi.textContent = status;
+      select.appendChild(opsi);
+    }
+
+    select.value = status;
+  }
+
   function ambilDataForm(form) {
     var data = {};
 
@@ -937,6 +1377,99 @@
     });
 
     return data;
+  }
+
+  // Mengubah berbagai bentuk nilai tanggal (ISO, dd/MM/yyyy, teks Indonesia, Date object) menjadi YYYY-MM-DD
+  function uraiTanggalKeISO(nilai) {
+    if (!nilai) return '';
+
+    if (nilai instanceof Date) {
+      if (isNaN(nilai.getTime())) return '';
+      var th = nilai.getFullYear();
+      var bl = String(nilai.getMonth() + 1).padStart(2, '0');
+      var hr = String(nilai.getDate()).padStart(2, '0');
+      return th + '-' + bl + '-' + hr;
+    }
+
+    var teks = String(nilai).trim();
+    if (!teks) return '';
+
+    // 1. Format ISO: YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(teks)) {
+      return teks;
+    }
+
+    // 2. Format ISO dengan waktu (misal: 2026-10-11T12:00:00)
+    var cocokIsoWaktu = teks.match(/^(\d{4})-(\d{2})-(\d{2})T/);
+    if (cocokIsoWaktu) {
+      return cocokIsoWaktu[1] + '-' + cocokIsoWaktu[2] + '-' + cocokIsoWaktu[3];
+    }
+
+    // 3. Format YYYY/MM/DD atau YYYY.MM.DD
+    var cocokTahunDepan = teks.match(/^(\d{4})[\/.-](\d{1,2})[\/.-](\d{1,2})$/);
+    if (cocokTahunDepan) {
+      return cocokTahunDepan[1] + '-' +
+        String(cocokTahunDepan[2]).padStart(2, '0') + '-' +
+        String(cocokTahunDepan[3]).padStart(2, '0');
+    }
+
+    // 4. Format dd/MM/yyyy atau dd-MM-yyyy atau dd.MM.yyyy
+    var cocokNumerik = teks.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);
+    if (cocokNumerik) {
+      var hari = String(cocokNumerik[1]).padStart(2, '0');
+      var bulan = String(cocokNumerik[2]).padStart(2, '0');
+      var tahun = cocokNumerik[3];
+      return tahun + '-' + bulan + '-' + hari;
+    }
+
+    // 5. Format teks nama bulan Indonesia / Inggris (misal: "11 Oktober 2026", "11 Okt 2026")
+    var kamusBulan = {
+      'januari': '01', 'jan': '01', 'january': '01',
+      'februari': '02', 'feb': '02', 'february': '02',
+      'maret': '03', 'mar': '03', 'march': '03',
+      'april': '04', 'apr': '04',
+      'mei': '05', 'may': '05',
+      'juni': '06', 'jun': '06', 'june': '06',
+      'juli': '07', 'jul': '07', 'july': '07',
+      'agustus': '08', 'agu': '08', 'agt': '08', 'august': '08', 'aug': '08',
+      'september': '09', 'sep': '09', 'sept': '09',
+      'oktober': '10', 'okt': '10', 'october': '10', 'oct': '10',
+      'november': '11', 'nov': '11',
+      'desember': '12', 'des': '12', 'december': '12', 'dec': '12'
+    };
+
+    var cocokTeks = teks.match(/^(\d{1,2})[\s\-]+([a-zA-Z]+)[\s\-]+(\d{4})$/);
+    if (cocokTeks) {
+      var h = String(cocokTeks[1]).padStart(2, '0');
+      var nb = cocokTeks[2].toLowerCase();
+      var y = cocokTeks[3];
+      if (kamusBulan[nb]) {
+        return y + '-' + kamusBulan[nb] + '-' + h;
+      }
+    }
+
+    // 6. Format teks dengan nama bulan di depan (misal: "Oktober 11, 2026")
+    var cocokBulanDepan = teks.match(/^([a-zA-Z]+)[\s\-]+(\d{1,2}),?[\s\-]+(\d{4})$/);
+    if (cocokBulanDepan) {
+      var nbDepan = cocokBulanDepan[1].toLowerCase();
+      var hDepan = String(cocokBulanDepan[2]).padStart(2, '0');
+      var yDepan = cocokBulanDepan[3];
+      if (kamusBulan[nbDepan]) {
+        return yDepan + '-' + kamusBulan[nbDepan] + '-' + hDepan;
+      }
+    }
+
+    // 7. Fallback standar JS Date
+    var d = new Date(teks);
+    if (!isNaN(d.getTime())) {
+      return [
+        d.getFullYear(),
+        String(d.getMonth() + 1).padStart(2, '0'),
+        String(d.getDate()).padStart(2, '0')
+      ].join('-');
+    }
+
+    return '';
   }
 
   // ==========================================
@@ -969,7 +1502,7 @@
   }
 
   // ==========================================
-  // SURAT MASUK: SIMPAN
+  // SURAT MASUK: SIMPAN & EDIT
   // ==========================================
 
   document.getElementById('formMasuk')
@@ -980,11 +1513,12 @@
       var tombol = document.getElementById('btnSimpanMasuk');
       var pesan = document.getElementById('pesanMasuk');
       var data = ambilDataForm(form);
+      var sedangEdit = Boolean(data.idSurat);
 
       tombol.disabled = true;
-      tombol.textContent = 'Menyimpan...';
+      tombol.textContent = sedangEdit ? 'Memperbarui...' : 'Menyimpan...';
 
-      tampilkanPesan(pesan, 'Menyimpan surat masuk...', '');
+      tampilkanPesan(pesan, sedangEdit ? 'Memperbarui surat masuk...' : 'Menyimpan surat masuk...', '');
 
       google.script.run
         .withSuccessHandler(function(hasil) {
@@ -994,9 +1528,8 @@
             'success'
           );
 
-          form.reset();
+          batalEditSuratMasuk();
           tombol.disabled = false;
-          tombol.textContent = 'Simpan Surat Masuk';
 
           muatSuratMasuk();
           muatDashboard();
@@ -1009,10 +1542,95 @@
           );
 
           tombol.disabled = false;
-          tombol.textContent = 'Simpan Surat Masuk';
+          tombol.textContent = sedangEdit ? 'Perbarui Surat Masuk' : 'Simpan Surat Masuk';
         })
         .simpanSuratMasuk(data);
     });
+
+  function mulaiEditSuratMasuk(id) {
+    var form = document.getElementById('formMasuk');
+    var pesan = document.getElementById('pesanMasuk');
+    var tombol = document.getElementById('btnSimpanMasuk');
+
+    tampilkanPesan(pesan, 'Mengambil data surat masuk...', '');
+
+    google.script.run
+      .withSuccessHandler(function(surat) {
+        if (!surat) {
+          tampilkanPesan(pesan, 'Data surat masuk tidak ditemukan.', 'error');
+          return;
+        }
+
+        document.getElementById('idSuratMasuk').value = surat.id || '';
+        form.nomorSurat.value = surat.nomorSurat || '';
+        form.tanggalSurat.value = uraiTanggalKeISO(surat.tanggalSurat);
+        form.tanggalTerima.value = uraiTanggalKeISO(surat.tanggalTerima);
+        form.asalSurat.value = surat.asalSurat || '';
+        form.perihal.value = surat.perihal || '';
+        form.kategori.value = surat.kategori || '';
+        form.status.value = surat.status || 'Belum Ditindaklanjuti';
+        form.disposisi.value = surat.disposisi || '';
+        form.linkDokumen.value = surat.linkDokumen || '';
+        form.keterangan.value = surat.keterangan || '';
+
+        var indikator = document.getElementById('indikatorModeMasuk');
+        if (indikator) {
+          indikator.textContent = 'Mode Edit: ' + surat.id;
+          indikator.style.display = 'inline-block';
+        }
+
+        var btnBatal = document.getElementById('btnBatalEditMasuk');
+        if (btnBatal) btnBatal.style.display = 'inline-block';
+
+        tombol.textContent = 'Perbarui Surat Masuk';
+
+        tampilkanPesan(pesan, 'Data surat siap diedit.', 'success');
+        form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      })
+      .withFailureHandler(function(error) {
+        tampilkanPesan(pesan, 'Gagal mengambil data surat: ' + error.message, 'error');
+      })
+      .ambilSuratMasukById(id);
+  }
+
+  function batalEditSuratMasuk() {
+    var form = document.getElementById('formMasuk');
+    form.reset();
+    document.getElementById('idSuratMasuk').value = '';
+    var indikator = document.getElementById('indikatorModeMasuk');
+    if (indikator) indikator.style.display = 'none';
+    var btnBatal = document.getElementById('btnBatalEditMasuk');
+    if (btnBatal) btnBatal.style.display = 'none';
+    var tombol = document.getElementById('btnSimpanMasuk');
+    if (tombol) {
+      tombol.disabled = false;
+      tombol.textContent = 'Simpan Surat Masuk';
+    }
+  }
+
+  function konfirmasiHapusSuratMasuk(id, nomorSurat) {
+    var labelNomor = nomorSurat && nomorSurat !== '-' ? ' (Nomor: ' + nomorSurat + ')' : '';
+    if (!confirm('Apakah Anda yakin ingin menghapus surat masuk dengan ID: ' + id + labelNomor + '?\n\nTindakan ini tidak dapat dibatalkan.')) {
+      return;
+    }
+
+    var pesan = document.getElementById('pesanMasuk');
+    tampilkanPesan(pesan, 'Menghapus surat masuk...', '');
+
+    google.script.run
+      .withSuccessHandler(function(hasil) {
+        tampilkanPesan(pesan, hasil.pesan, 'success');
+        if (document.getElementById('idSuratMasuk').value === id) {
+          batalEditSuratMasuk();
+        }
+        muatSuratMasuk();
+        muatDashboard();
+      })
+      .withFailureHandler(function(error) {
+        tampilkanPesan(pesan, 'Gagal menghapus surat masuk: ' + error.message, 'error');
+      })
+      .hapusSuratMasuk(id);
+  }
 
   // ==========================================
   // SURAT MASUK: TAMPILKAN DATA
@@ -1024,7 +1642,7 @@
     var tbody = document.getElementById('tabelMasuk');
 
     tbody.innerHTML =
-      '<tr><td colspan="8" class="empty">Memuat data...</td></tr>';
+      '<tr><td colspan="9" class="empty">Memuat data...</td></tr>';
 
     google.script.run
       .withSuccessHandler(function(data) {
@@ -1036,7 +1654,7 @@
 
         var tr = document.createElement('tr');
         var td = buatSel('Gagal memuat data: ' + error.message);
-        td.colSpan = 8;
+        td.colSpan = 9;
         td.className = 'empty';
 
         tr.appendChild(td);
@@ -1052,7 +1670,7 @@
     if (!data.length) {
       var trKosong = document.createElement('tr');
       var tdKosong = buatSel('Belum ada data surat masuk.');
-      tdKosong.colSpan = 8;
+      tdKosong.colSpan = 9;
       tdKosong.className = 'empty';
 
       trKosong.appendChild(tdKosong);
@@ -1071,6 +1689,33 @@
       tr.appendChild(buatSel(surat.perihal));
       tr.appendChild(buatSel(surat.status));
       tr.appendChild(buatLinkDokumen(surat.linkDokumen));
+
+      var tdAksi = document.createElement('td');
+      tdAksi.className = 'no-print';
+      tdAksi.style.whiteSpace = 'nowrap';
+
+      var btnEdit = document.createElement('button');
+      btnEdit.type = 'button';
+      btnEdit.className = 'btn small';
+      btnEdit.textContent = 'Edit';
+      btnEdit.style.marginRight = '5px';
+      btnEdit.addEventListener('click', function() {
+        mulaiEditSuratMasuk(surat.id);
+      });
+      tdAksi.appendChild(btnEdit);
+
+      var btnHapus = document.createElement('button');
+      btnHapus.type = 'button';
+      btnHapus.className = 'btn small secondary';
+      btnHapus.style.background = '#dc2626';
+      btnHapus.style.color = '#ffffff';
+      btnHapus.textContent = 'Hapus';
+      btnHapus.addEventListener('click', function() {
+        konfirmasiHapusSuratMasuk(surat.id, surat.nomorSurat);
+      });
+      tdAksi.appendChild(btnHapus);
+
+      tr.appendChild(tdAksi);
 
       tbody.appendChild(tr);
     });
@@ -1096,7 +1741,7 @@
     });
 
   // ==========================================
-  // SURAT KELUAR: SIMPAN
+  // SURAT KELUAR: SIMPAN & EDIT CATATAN
   // ==========================================
 
   document.getElementById('formKeluar')
@@ -1107,11 +1752,21 @@
       var tombol = document.getElementById('btnSimpanKeluar');
       var pesan = document.getElementById('pesanKeluar');
       var data = ambilDataForm(form);
+      var sedangEdit = Boolean(data.idSurat);
+
+      if (!data.idSurat) {
+        tampilkanPesan(
+          pesan,
+          'Pembuatan surat keluar baru hanya dilakukan melalui menu Buat Surat. Formulir ini dipakai untuk mengedit catatan surat yang sudah ada (gunakan tombol Edit pada daftar).',
+          'error'
+        );
+        return;
+      }
 
       tombol.disabled = true;
-      tombol.textContent = 'Menyimpan...';
+      tombol.textContent = sedangEdit ? 'Memperbarui...' : 'Menyimpan...';
 
-      tampilkanPesan(pesan, 'Menyimpan surat keluar...', '');
+      tampilkanPesan(pesan, sedangEdit ? 'Memperbarui surat keluar...' : 'Menyimpan surat keluar...', '');
 
       google.script.run
         .withSuccessHandler(function(hasil) {
@@ -1121,9 +1776,8 @@
             'success'
           );
 
-          form.reset();
+          batalEditCatatanKeluar();
           tombol.disabled = false;
-          tombol.textContent = 'Simpan Surat Keluar';
 
           muatSuratKeluar();
           muatDashboard();
@@ -1136,10 +1790,97 @@
           );
 
           tombol.disabled = false;
-          tombol.textContent = 'Simpan Surat Keluar';
+          tombol.textContent = sedangEdit ? 'Perbarui Surat Keluar' : 'Simpan Surat Keluar';
         })
         .simpanSuratKeluar(data);
     });
+
+  function mulaiEditCatatanKeluar(id) {
+    var form = document.getElementById('formKeluar');
+    var pesan = document.getElementById('pesanKeluar');
+    var tombol = document.getElementById('btnSimpanKeluar');
+
+    tampilkanPesan(pesan, 'Mengambil data surat keluar...', '');
+
+    google.script.run
+      .withSuccessHandler(function(surat) {
+        if (!surat) {
+          tampilkanPesan(pesan, 'Data surat keluar tidak ditemukan.', 'error');
+          return;
+        }
+
+        document.getElementById('idSuratKeluarCatatan').value = surat.id || '';
+        form.nomorSurat.value = surat.nomorSurat || '';
+        form.tanggalSurat.value = uraiTanggalKeISO(surat.tanggalSurat);
+        form.tujuanSurat.value = surat.tujuanSurat || '';
+        form.perihal.value = surat.perihal || '';
+        form.kategori.value = surat.kategori || '';
+        form.penandatangan.value = surat.penandatangan || '';
+        pastikanOpsiStatusSurat(form.status, surat.status || 'Draft');
+        form.linkDokumen.value = surat.linkDokumen || '';
+        form.keterangan.value = surat.keterangan || '';
+
+        var indikator = document.getElementById('indikatorModeKeluar');
+        if (indikator) {
+          indikator.textContent = 'Mode Edit: ' + surat.id;
+          indikator.style.display = 'inline-block';
+        }
+
+        var btnBatal = document.getElementById('btnBatalEditKeluar');
+        if (btnBatal) btnBatal.style.display = 'inline-block';
+
+        tombol.textContent = 'Perbarui Surat Keluar';
+
+        tampilkanPesan(pesan, 'Data catatan surat siap diedit.', 'success');
+        form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      })
+      .withFailureHandler(function(error) {
+        tampilkanPesan(pesan, 'Gagal mengambil data surat: ' + error.message, 'error');
+      })
+      .ambilSuratKeluarById(id);
+  }
+
+  function batalEditCatatanKeluar() {
+    var form = document.getElementById('formKeluar');
+    form.reset();
+    document.getElementById('idSuratKeluarCatatan').value = '';
+    var indikator = document.getElementById('indikatorModeKeluar');
+    if (indikator) indikator.style.display = 'none';
+    var btnBatal = document.getElementById('btnBatalEditKeluar');
+    if (btnBatal) btnBatal.style.display = 'none';
+    var tombol = document.getElementById('btnSimpanKeluar');
+    if (tombol) {
+      tombol.disabled = false;
+      tombol.textContent = 'Simpan Surat Keluar';
+    }
+  }
+
+  function konfirmasiHapusSuratKeluar(id, nomorSurat) {
+    var labelNomor = nomorSurat && nomorSurat !== '-' ? ' (Nomor: ' + nomorSurat + ')' : '';
+    if (!confirm('Apakah Anda yakin ingin menghapus surat keluar dengan ID: ' + id + labelNomor + '?\n\nTindakan ini tidak dapat dibatalkan.')) {
+      return;
+    }
+
+    var pesan = document.getElementById('pesanKeluar');
+    tampilkanPesan(pesan, 'Menghapus surat keluar...', '');
+
+    google.script.run
+      .withSuccessHandler(function(hasil) {
+        tampilkanPesan(pesan, hasil.pesan, 'success');
+        if (document.getElementById('idSuratKeluarCatatan').value === id) {
+          batalEditCatatanKeluar();
+        }
+        if (document.getElementById('idSuratKeluar').value === id) {
+          bukaHalamanBuatSurat(true);
+        }
+        muatSuratKeluar();
+        muatDashboard();
+      })
+      .withFailureHandler(function(error) {
+        tampilkanPesan(pesan, 'Gagal menghapus surat keluar: ' + error.message, 'error');
+      })
+      .hapusSuratKeluar(id);
+  }
 
   // ==========================================
   // SURAT KELUAR: TAMPILKAN DATA
@@ -1151,7 +1892,7 @@
     var tbody = document.getElementById('tabelKeluar');
 
     tbody.innerHTML =
-      '<tr><td colspan="9" class="empty">Memuat data...</td></tr>';
+      '<tr><td colspan="10" class="empty">Memuat data...</td></tr>';
 
     google.script.run
       .withSuccessHandler(function(data) {
@@ -1163,7 +1904,7 @@
 
         var tr = document.createElement('tr');
         var td = buatSel('Gagal memuat data: ' + error.message);
-        td.colSpan = 9;
+        td.colSpan = 10;
         td.className = 'empty';
 
         tr.appendChild(td);
@@ -1179,7 +1920,7 @@
     if (!data.length) {
       var trKosong = document.createElement('tr');
       var tdKosong = buatSel('Belum ada data surat keluar.');
-      tdKosong.colSpan = 9;
+      tdKosong.colSpan = 10;
       tdKosong.className = 'empty';
 
       trKosong.appendChild(tdKosong);
@@ -1200,6 +1941,45 @@
       tr.appendChild(buatSel(surat.status));
       tr.appendChild(buatLinkDokumen(surat.linkDokumen));
 
+      var tdAksi = document.createElement('td');
+      tdAksi.className = 'no-print';
+      tdAksi.style.whiteSpace = 'nowrap';
+
+      var btnBuka = document.createElement('button');
+      btnBuka.type = 'button';
+      btnBuka.className = 'btn small';
+      btnBuka.textContent = 'Buka';
+      btnBuka.style.marginRight = '5px';
+      btnBuka.addEventListener('click', function() {
+        bukaPembuatanSuratKeluar(surat.id);
+      });
+      tdAksi.appendChild(btnBuka);
+
+      var btnEditCatatan = document.createElement('button');
+      btnEditCatatan.type = 'button';
+      btnEditCatatan.className = 'btn small secondary';
+      btnEditCatatan.style.background = '#0284c7';
+      btnEditCatatan.style.color = '#ffffff';
+      btnEditCatatan.style.marginRight = '5px';
+      btnEditCatatan.textContent = 'Edit';
+      btnEditCatatan.addEventListener('click', function() {
+        mulaiEditCatatanKeluar(surat.id);
+      });
+      tdAksi.appendChild(btnEditCatatan);
+
+      var btnHapus = document.createElement('button');
+      btnHapus.type = 'button';
+      btnHapus.className = 'btn small secondary';
+      btnHapus.style.background = '#dc2626';
+      btnHapus.style.color = '#ffffff';
+      btnHapus.textContent = 'Hapus';
+      btnHapus.addEventListener('click', function() {
+        konfirmasiHapusSuratKeluar(surat.id, surat.nomorSurat);
+      });
+      tdAksi.appendChild(btnHapus);
+
+      tr.appendChild(tdAksi);
+
       tbody.appendChild(tr);
     });
   }
@@ -1215,6 +1995,7 @@
           surat.tujuanSurat,
           surat.perihal,
           surat.kategori,
+          surat.jenisSurat,
           surat.status
         ].some(function(nilai) {
           return String(nilai || '').toLowerCase().includes(kata);
@@ -1223,6 +2004,434 @@
 
       tampilkanSuratKeluar(hasil);
     });
+
+  // ==========================================
+  // PEMBUATAN SURAT KELUAR
+  // ==========================================
+
+  var DAFTAR_JENIS_SURAT = [
+    'Surat Undangan',
+    'Surat Pemberitahuan',
+    'Surat Permohonan',
+    'Surat Keterangan',
+    'Surat Tugas',
+    'Surat Pengantar',
+    'Surat Balasan',
+    'Surat Lainnya'
+  ];
+
+  var pengaturanKop = {
+    namaSekolah: 'SMP Negeri 13 Tasikmalaya',
+    alamat: '',
+    telepon: '',
+    kota: '',
+    namaKepala: '',
+    jabatanKepala: '',
+    nipKepala: ''
+  };
+
+  var jenisSuratSiap = false;
+
+  function aturUkuranKertasCetak(aturan) {
+    var style = document.getElementById('printPageStyle');
+
+    if (!style) {
+      style = document.createElement('style');
+      style.id = 'printPageStyle';
+      document.head.appendChild(style);
+    }
+
+    style.textContent = aturan;
+  }
+
+  function pilihMenuHalaman(idHalaman) {
+    document.querySelectorAll('.menu').forEach(function(item) {
+      item.classList.toggle('active', item.dataset.page === idHalaman);
+    });
+
+    document.querySelectorAll('.page').forEach(function(page) {
+      page.classList.toggle('active', page.id === idHalaman);
+    });
+  }
+
+  function siapkanPilihanJenisSurat() {
+    if (jenisSuratSiap) return;
+
+    var select = document.getElementById('jenisSurat');
+    var kartu = document.getElementById('jenisKartu');
+
+    DAFTAR_JENIS_SURAT.forEach(function(jenis) {
+      var option = document.createElement('option');
+      option.value = jenis;
+      option.textContent = jenis;
+      select.appendChild(option);
+
+      var tombol = document.createElement('button');
+      tombol.type = 'button';
+      tombol.className = 'jenis-kartu';
+      tombol.dataset.jenis = jenis;
+      tombol.textContent = jenis;
+      tombol.addEventListener('click', function() {
+        pilihJenisSurat(jenis);
+      });
+      kartu.appendChild(tombol);
+    });
+
+    select.addEventListener('change', function() {
+      pilihJenisSurat(select.value);
+    });
+
+    jenisSuratSiap = true;
+  }
+
+  function pilihJenisSurat(jenis) {
+    document.getElementById('jenisSurat').value = jenis || '';
+
+    document.querySelectorAll('.jenis-kartu').forEach(function(kartu) {
+      kartu.classList.toggle('active', kartu.dataset.jenis === jenis);
+    });
+
+    var perluJabatan = jenis !== 'Surat Pemberitahuan' &&
+      jenis !== 'Surat Pengantar' &&
+      jenis !== '';
+
+    document.getElementById('fieldJabatanPenerima').style.display =
+      perluJabatan ? '' : 'none';
+
+    perbaruiPratinjauSurat();
+  }
+
+  function muatPengaturanKop() {
+    google.script.run
+      .withSuccessHandler(function(data) {
+        pengaturanKop = data || pengaturanKop;
+        isiKopSurat();
+        perbaruiPratinjauSurat();
+      })
+      .withFailureHandler(function() {
+        isiKopSurat();
+      })
+      .ambilPengaturanKop();
+  }
+
+  function isiKopSurat() {
+    document.getElementById('kopNama').textContent =
+      pengaturanKop.namaSekolah || '';
+
+    var elAlamat = document.getElementById('kopAlamat');
+    var elTelepon = document.getElementById('kopTelepon');
+
+    elAlamat.textContent = pengaturanKop.alamat || '';
+    elTelepon.textContent = pengaturanKop.telepon || '';
+    elAlamat.style.display = pengaturanKop.alamat ? '' : 'none';
+    elTelepon.style.display = pengaturanKop.telepon ? '' : 'none';
+  }
+
+  function siapkanHalamanBuatSurat() {
+    siapkanPilihanJenisSurat();
+    muatPengaturanKop();
+    isiKopSurat();
+    perbaruiPratinjauSurat();
+  }
+
+  function bukaHalamanBuatSurat(resetForm) {
+    pilihMenuHalaman('buatSuratKeluar');
+
+    if (resetForm) {
+      document.getElementById('formBuatSurat').reset();
+      document.getElementById('idSuratKeluar').value = '';
+      pilihJenisSurat('');
+      tampilkanPesan(document.getElementById('pesanBuatSurat'), '', '');
+
+      var labelMode = document.getElementById('labelModeBuatSurat');
+      if (labelMode) {
+        labelMode.textContent = 'Mode: Surat Keluar Baru';
+        labelMode.style.background = '#ccfbf1';
+        labelMode.style.color = '#115e59';
+      }
+
+      var btnSimpan = document.getElementById('btnSimpanDraft');
+      if (btnSimpan) {
+        btnSimpan.textContent = 'Simpan Surat';
+      }
+
+      var selStatus = document.getElementById('statusBuatSurat');
+      if (selStatus) {
+        selStatus.value = 'Draft';
+      }
+    }
+
+    siapkanHalamanBuatSurat();
+  }
+
+  function kembaliKeDaftarSuratKeluar() {
+    pilihMenuHalaman('suratKeluar');
+    muatSuratKeluar();
+  }
+
+  function tanggalKeISOLokal(nilai) {
+    return uraiTanggalKeISO(nilai);
+  }
+
+  function formatTanggalSurat(nilai) {
+    var iso = tanggalKeISOLokal(nilai);
+    if (!iso) return '';
+
+    var bulan = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    var bagian = iso.split('-');
+    var idx = Number(bagian[1]) - 1;
+
+    return Number(bagian[2]) + ' ' + (bulan[idx] || bagian[1]) +
+      ' ' + bagian[0];
+  }
+
+  function dataFormBuatSurat() {
+    var data = ambilDataForm(document.getElementById('formBuatSurat'));
+    data.jenisSurat = document.getElementById('jenisSurat').value;
+    return data;
+  }
+
+  function validasiDraftSurat(data) {
+    if (!data.nomorSurat || !data.tanggalSurat ||
+        !data.tujuanSurat || !data.perihal) {
+      return 'Nomor surat, tanggal surat, tujuan surat, dan perihal wajib diisi.';
+    }
+
+    return '';
+  }
+
+  function validasiPratinjauSurat(data) {
+    var draft = validasiDraftSurat(data);
+    if (draft) return draft;
+
+    if (!data.jenisSurat || !String(data.isiSurat || '').trim()) {
+      return 'Jenis surat dan isi surat wajib diisi untuk pratinjau dan cetak.';
+    }
+
+    return '';
+  }
+
+  function perbaruiPratinjauSurat() {
+    var data = dataFormBuatSurat();
+
+    document.getElementById('pNomor').textContent = data.nomorSurat || '...........';
+    document.getElementById('pPerihal').textContent = data.perihal || '...........';
+    var jabatan = String(data.jabatanPenerima || '').trim();
+    var elJabatan = document.getElementById('pJabatanPenerima');
+    var elTujuan = document.getElementById('pTujuan');
+
+    if (jabatan) {
+      elJabatan.textContent = jabatan;
+      elTujuan.textContent = data.tujuanSurat || '';
+      elTujuan.style.display = data.tujuanSurat ? '' : 'none';
+    } else {
+      elJabatan.textContent = data.tujuanSurat || '';
+      elTujuan.textContent = '';
+      elTujuan.style.display = 'none';
+    }
+    document.getElementById('pIsi').textContent = data.isiSurat || '';
+    document.getElementById('pPenutup').textContent = data.penutup || '';
+    document.getElementById('pNamaTtd').textContent = data.penandatangan || '';
+    document.getElementById('pJabatanTtd').textContent =
+      data.jabatanPenandatangan || '';
+
+    var lampiran = String(data.lampiran || '').trim();
+    document.getElementById('barisLampiran').style.display =
+      lampiran ? '' : 'none';
+    document.getElementById('pLampiran').textContent = lampiran;
+
+    var tanggalTeks = formatTanggalSurat(data.tanggalSurat);
+    var kota = pengaturanKop.kota || '';
+    var tempatTanggal = '';
+
+    if (kota && tanggalTeks) {
+      tempatTanggal = kota + ', ' + tanggalTeks;
+    } else if (tanggalTeks) {
+      tempatTanggal = tanggalTeks;
+    }
+
+    document.getElementById('pTempatTanggal').textContent = tempatTanggal;
+
+    var tembusan = String(data.tembusan || '').trim();
+    var blokTembusan = document.getElementById('blokTembusan');
+    var pTembusan = document.getElementById('pTembusan');
+    pTembusan.textContent = tembusan;
+    blokTembusan.style.display = tembusan ? '' : 'none';
+  }
+
+  function pratinjauSuratKeluar() {
+    var data = dataFormBuatSurat();
+    var pesan = document.getElementById('pesanBuatSurat');
+    var error = validasiPratinjauSurat(data);
+
+    if (error) {
+      tampilkanPesan(pesan, error, 'error');
+      return;
+    }
+
+    perbaruiPratinjauSurat();
+    tampilkanPesan(pesan, 'Pratinjau surat berhasil diperbarui.', 'success');
+    document.getElementById('lembarSurat').scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+  }
+
+  function simpanDraftSuratKeluarKlien() {
+    var data = dataFormBuatSurat();
+    var selStatus = document.getElementById('statusBuatSurat');
+    if (selStatus) {
+      data.status = selStatus.value;
+    }
+
+    var pesan = document.getElementById('pesanBuatSurat');
+    var tombol = document.getElementById('btnSimpanDraft');
+    var error = validasiDraftSurat(data);
+
+    if (error) {
+      tampilkanPesan(pesan, error, 'error');
+      return;
+    }
+
+    var idSekarang = document.getElementById('idSuratKeluar').value;
+    var sedangEdit = Boolean(idSekarang);
+
+    tombol.disabled = true;
+    tombol.textContent = sedangEdit ? 'Memperbarui...' : 'Menyimpan...';
+    tampilkanPesan(pesan, sedangEdit ? 'Memperbarui surat keluar...' : 'Menyimpan surat keluar...', '');
+
+    google.script.run
+      .withSuccessHandler(function(hasil) {
+        document.getElementById('idSuratKeluar').value = hasil.id;
+
+        var labelMode = document.getElementById('labelModeBuatSurat');
+        if (labelMode) {
+          labelMode.textContent = 'Mode: Mengedit Surat (' + hasil.id + ')';
+          labelMode.style.background = '#fef08a';
+          labelMode.style.color = '#854d0e';
+        }
+
+        tombol.textContent = 'Perbarui Surat';
+        tombol.disabled = false;
+
+        tampilkanPesan(
+          pesan,
+          hasil.pesan + ' ID agenda: ' + hasil.id,
+          'success'
+        );
+        muatDashboard();
+        muatSuratKeluar();
+      })
+      .withFailureHandler(function(err) {
+        tampilkanPesan(
+          pesan,
+          'Gagal menyimpan: ' + err.message,
+          'error'
+        );
+        tombol.disabled = false;
+        tombol.textContent = sedangEdit ? 'Perbarui Surat' : 'Simpan Surat';
+      })
+      .simpanDraftSuratKeluar(data);
+  }
+
+  function cetakSuratKeluar() {
+    var data = dataFormBuatSurat();
+    var pesan = document.getElementById('pesanBuatSurat');
+    var error = validasiPratinjauSurat(data);
+
+    if (error) {
+      tampilkanPesan(pesan, error, 'error');
+      return;
+    }
+
+    perbaruiPratinjauSurat();
+    document.body.classList.remove('print-mode');
+    document.body.classList.add('print-surat');
+    aturUkuranKertasCetak(
+      '@page { size: A4 portrait; margin: 16mm; }'
+    );
+    window.print();
+  }
+
+  function isiFormPembuatanSurat(data) {
+    var form = document.getElementById('formBuatSurat');
+
+    form.reset();
+    document.getElementById('idSuratKeluar').value = data.id || '';
+    form.nomorSurat.value = data.nomorSurat || '';
+    form.tanggalSurat.value = uraiTanggalKeISO(data.tanggalSurat);
+    form.lampiran.value = data.lampiran || '';
+    form.tujuanSurat.value = data.tujuanSurat || '';
+    form.jabatanPenerima.value = data.jabatanPenerima || '';
+    form.perihal.value = data.perihal || '';
+    form.isiSurat.value = data.isiSurat || '';
+    form.penutup.value = data.penutup || '';
+    form.penandatangan.value = data.penandatangan || '';
+    form.jabatanPenandatangan.value = data.jabatanPenandatangan || '';
+    form.tembusan.value = data.tembusan || '';
+
+    var selStatus = document.getElementById('statusBuatSurat');
+    if (selStatus) {
+      pastikanOpsiStatusSurat(selStatus, data.status || 'Draft');
+    }
+
+    var labelMode = document.getElementById('labelModeBuatSurat');
+    if (labelMode) {
+      labelMode.textContent = 'Mode: Mengedit Surat (' + (data.id || '') + ')';
+      labelMode.style.background = '#fef08a';
+      labelMode.style.color = '#854d0e';
+    }
+
+    var btnSimpan = document.getElementById('btnSimpanDraft');
+    if (btnSimpan) {
+      btnSimpan.textContent = 'Perbarui Surat';
+    }
+
+    pilihJenisSurat(data.jenisSurat || '');
+    perbaruiPratinjauSurat();
+  }
+
+  function bukaPembuatanSuratKeluar(id) {
+    var pesan = document.getElementById('pesanBuatSurat');
+
+    pilihMenuHalaman('buatSuratKeluar');
+    siapkanPilihanJenisSurat();
+    muatPengaturanKop();
+    tampilkanPesan(pesan, 'Membuka data surat...', '');
+
+    google.script.run
+      .withSuccessHandler(function(data) {
+        isiFormPembuatanSurat(data || {});
+        tampilkanPesan(
+          pesan,
+          'Data surat berhasil dibuka. Simpan surat akan memperbarui data yang sama.',
+          'success'
+        );
+      })
+      .withFailureHandler(function(err) {
+        tampilkanPesan(
+          pesan,
+          'Gagal membuka surat: ' + err.message,
+          'error'
+        );
+      })
+      .ambilSuratKeluarById(id);
+  }
+
+  document.getElementById('formBuatSurat')
+    .addEventListener('submit', function(event) {
+      event.preventDefault();
+      simpanDraftSuratKeluarKlien();
+    });
+
+  document.getElementById('formBuatSurat')
+    .addEventListener('input', perbaruiPratinjauSurat);
+
+  document.getElementById('jenisSurat')
+    .addEventListener('change', perbaruiPratinjauSurat);
 
   // ==========================================
   // LAPORAN: MUAT DATA
@@ -1238,13 +2447,15 @@
 
     var masukSelesai = false;
     var keluarSelesai = false;
+    var tugasSelesai = false;
     var gagal = false;
 
     var dataMasuk = [];
     var dataKeluar = [];
+    var dataTugas = [];
 
     function prosesJikaSelesai() {
-      if (!masukSelesai || !keluarSelesai) return;
+      if (!masukSelesai || !keluarSelesai || !tugasSelesai) return;
 
       if (gagal) {
         tampilkanPesan(
@@ -1276,6 +2487,18 @@
           nomor: surat.nomorSurat,
           pihak: surat.tujuanSurat,
           perihal: surat.perihal,
+          status: surat.status,
+          id: surat.id
+        });
+      });
+
+      dataTugas.forEach(function(surat) {
+        semuaDataLaporan.push({
+          jenis: 'Surat Tugas',
+          tanggal: surat.tanggalSurat,
+          nomor: surat.nomorSurat,
+          pihak: surat.namaPegawai,
+          perihal: surat.keperluan || surat.tujuanTugas,
           status: surat.status,
           id: surat.id
         });
@@ -1321,42 +2544,24 @@
         prosesJikaSelesai();
       })
       .ambilSuratKeluar();
+
+    google.script.run
+      .withSuccessHandler(function(data) {
+        dataTugas = data || [];
+        tugasSelesai = true;
+        prosesJikaSelesai();
+      })
+      .withFailureHandler(function(error) {
+        tugasSelesai = true;
+        gagal = true;
+        prosesJikaSelesai();
+      })
+      .ambilSuratTugas();
   }
 
   // Mengubah format tanggal yang umum ditemukan menjadi YYYY-MM-DD.
   function tanggalKeISO(nilai) {
-    if (!nilai) return '';
-
-    var teks = String(nilai).trim();
-
-    if (/^\d{4}-\d{2}-\d{2}$/.test(teks)) {
-      return teks;
-    }
-
-    var cocok = teks.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);
-
-    if (cocok) {
-      var bagianPertama = Number(cocok[1]);
-      var bagianKedua = Number(cocok[2]);
-      var tahun = cocok[3];
-
-      // Tampilan tanggal dengan tahun di belakang dianggap
-      // dd/MM/yyyy untuk format Indonesia.
-      var hari = String(bagianPertama).padStart(2, '0');
-      var bulan = String(bagianKedua).padStart(2, '0');
-
-      return tahun + '-' + bulan + '-' + hari;
-    }
-
-    var tanggal = new Date(teks);
-
-    if (isNaN(tanggal.getTime())) return '';
-
-    return [
-      tanggal.getFullYear(),
-      String(tanggal.getMonth() + 1).padStart(2, '0'),
-      String(tanggal.getDate()).padStart(2, '0')
-    ].join('-');
+    return uraiTanggalKeISO(nilai);
   }
 
   function formatTanggalIndonesia(iso) {
@@ -1432,7 +2637,9 @@
       ? 'Surat Masuk'
       : jenis === 'KELUAR'
         ? 'Surat Keluar'
-        : 'Semua Surat';
+        : jenis === 'TUGAS'
+          ? 'Surat Tugas'
+          : 'Semua Surat';
 
     var labelTanggal = 'Semua tanggal';
 
@@ -1495,13 +2702,18 @@
   }
 
   function cetakLaporan() {
+    document.body.classList.remove('print-surat');
     document.body.classList.add('print-mode');
+    aturUkuranKertasCetak(
+      '@page { size: landscape; margin: 12mm; }'
+    );
 
     window.print();
   }
 
   window.addEventListener('afterprint', function() {
     document.body.classList.remove('print-mode');
+    document.body.classList.remove('print-surat');
   });
 
   // ==========================================
@@ -1513,4 +2725,4 @@
 
 </body>
 </html>
-```
+
