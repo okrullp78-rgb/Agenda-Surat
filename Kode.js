@@ -892,3 +892,313 @@ function ambilSuratTugas() {
       };
     });
 }
+
+// ==========================================
+// SURAT TUGAS: KOLOM TAMBAHAN & PEMETAAN
+// ==========================================
+
+// Kolom tambahan (ditambahkan di AKHIR sheet, tanpa mengubah urutan/nama
+// 13 kolom dasar) untuk mendukung format resmi Surat Tugas sekolah.
+// Mengikuti pola yang sama dengan KOLOM_SURAT_KELUAR_TAMBAHAN.
+var KOLOM_SURAT_TUGAS_TAMBAHAN = [
+  'Dasar_Surat',
+  'Hari',
+  'Waktu',
+  'Tempat',
+  'Jabatan_Penandatangan',
+  'Tembusan'
+];
+
+function pastikanKolomSuratTugas_(sheet) {
+  KOLOM_SURAT_TUGAS_TAMBAHAN.forEach(function(nama) {
+    const peta = petaKolomSuratTugas_(sheet);
+    if (peta.indeks[nama]) {
+      return;
+    }
+
+    const kolom = Math.max(sheet.getLastColumn(), 13) + 1;
+    sheet.getRange(1, kolom)
+      .setValue(nama)
+      .setFontWeight('bold')
+      .setBackground('#0f766e')
+      .setFontColor('#ffffff');
+  });
+
+  return petaKolomSuratTugas_(sheet);
+}
+
+// Memetakan nama kolom ke indeks 1-based berdasarkan header sheet.
+function petaKolomSuratTugas_(sheet) {
+  const jumlahKolom = Math.max(sheet.getLastColumn(), 13);
+  const headers = sheet
+    .getRange(1, 1, 1, jumlahKolom)
+    .getDisplayValues()[0];
+
+  const indeks = {};
+  headers.forEach(function(nama, i) {
+    if (nama) {
+      indeks[nama] = i + 1;
+    }
+  });
+
+  return {
+    indeks: indeks,
+    jumlahKolom: jumlahKolom,
+    headers: headers
+  };
+}
+
+function tulisKolomTugas_(baris, peta, nama, nilai) {
+  if (!peta.indeks[nama]) {
+    return;
+  }
+
+  baris[peta.indeks[nama] - 1] = nilai;
+}
+
+function cariBarisSuratTugasById_(sheet, id) {
+  const idCari = String(id || '').trim();
+  if (!idCari) {
+    return -1;
+  }
+
+  const barisTerakhir = sheet.getLastRow();
+  if (barisTerakhir < 2) {
+    return -1;
+  }
+
+  const ids = sheet.getRange(2, 1, barisTerakhir - 1, 1).getDisplayValues();
+  for (let i = 0; i < ids.length; i++) {
+    if (String(ids[i][0] || '').trim() === idCari) {
+      return i + 2;
+    }
+  }
+
+  return -1;
+}
+
+// ==========================================
+// SURAT TUGAS: AMBIL SATU SURAT (KELOMPOK
+// PER NOMOR SURAT) UNTUK DIEDIT
+// ==========================================
+
+function ambilSuratTugasById(id) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = ss.getSheetByName('Surat_Tugas');
+
+  if (!sheet) {
+    throw new Error('Sheet Surat_Tugas tidak ditemukan.');
+  }
+
+  const nomorBaris = cariBarisSuratTugasById_(sheet, id);
+  if (nomorBaris < 0) {
+    throw new Error('Surat tugas tidak ditemukan.');
+  }
+
+  const peta = petaKolomSuratTugas_(sheet);
+  const jumlahKolom = peta.jumlahKolom;
+  const barisSumber = sheet
+    .getRange(nomorBaris, 1, 1, jumlahKolom)
+    .getDisplayValues()[0];
+
+  const idxNomor = peta.indeks['Nomor_Surat'];
+  const nomorSurat = String(barisSumber[idxNomor - 1] || '').trim();
+
+  function nilai(baris, nama) {
+    if (!peta.indeks[nama]) {
+      return '';
+    }
+    return String(baris[peta.indeks[nama] - 1] || '').trim();
+  }
+
+  const barisTerakhir = sheet.getLastRow();
+  const semuaBaris = barisTerakhir >= 2
+    ? sheet.getRange(2, 1, barisTerakhir - 1, jumlahKolom).getDisplayValues()
+    : [];
+
+  // Kumpulkan semua pegawai yang berbagi nomor surat yang sama.
+  const pegawai = [];
+  semuaBaris.forEach(function(baris) {
+    if (String(baris[0] || '').trim() === '') {
+      return;
+    }
+    if (String(baris[idxNomor - 1] || '').trim() !== nomorSurat) {
+      return;
+    }
+    pegawai.push({
+      id: String(baris[0] || '').trim(),
+      namaPegawai: nilai(baris, 'Nama_Pegawai'),
+      nip: nilai(baris, 'NIP'),
+      jabatan: nilai(baris, 'Jabatan')
+    });
+  });
+
+  return {
+    id: String(barisSumber[0] || '').trim(),
+    nomorSurat: nomorSurat,
+    nomorSuratAwal: nomorSurat,
+    tanggalSurat: nilai(barisSumber, 'Tanggal_Surat'),
+    dasarSurat: nilai(barisSumber, 'Dasar_Surat'),
+    tujuanTugas: nilai(barisSumber, 'Tujuan_Tugas'),
+    hari: nilai(barisSumber, 'Hari'),
+    tanggalMulai: nilai(barisSumber, 'Tanggal_Mulai'),
+    tanggalSelesai: nilai(barisSumber, 'Tanggal_Selesai'),
+    waktu: nilai(barisSumber, 'Waktu'),
+    tempat: nilai(barisSumber, 'Tempat'),
+    keperluan: nilai(barisSumber, 'Keperluan'),
+    penandatangan: nilai(barisSumber, 'Penandatangan'),
+    jabatanPenandatangan: nilai(barisSumber, 'Jabatan_Penandatangan'),
+    tembusan: nilai(barisSumber, 'Tembusan'),
+    linkDokumen: nilai(barisSumber, 'Link_Dokumen'),
+    status: nilai(barisSumber, 'Status'),
+    pegawai: pegawai
+  };
+}
+
+// ==========================================
+// SURAT TUGAS: SIMPAN (BUAT / EDIT)
+// Satu baris per pegawai, dikelompokkan oleh
+// Nomor_Surat. Baris kelompok lama diganti
+// saat edit agar tidak ada duplikasi.
+// ==========================================
+
+function simpanSuratTugas(form) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = ss.getSheetByName('Surat_Tugas');
+
+  if (!sheet) {
+    throw new Error('Sheet Surat_Tugas tidak ditemukan.');
+  }
+
+  const peta = pastikanKolomSuratTugas_(sheet);
+
+  if (!form.nomorSurat || !form.tanggalSurat) {
+    throw new Error('Nomor surat dan tanggal surat wajib diisi.');
+  }
+
+  const daftarPegawai = (form.pegawai || []).filter(function(p) {
+    return String(p.namaPegawai || '').trim() !== '';
+  });
+
+  if (!daftarPegawai.length) {
+    throw new Error('Minimal satu pegawai yang ditugasi wajib diisi.');
+  }
+
+  // Nomor acuan untuk mencari kelompok lama (pakai nomor awal saat edit).
+  const nomorCari = String(form.nomorSuratAwal || form.nomorSurat || '').trim();
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+
+  try {
+    const barisTerakhir = sheet.getLastRow();
+    const nomorAcuan = peta.indeks['Nomor_Surat'];
+    const barisUntukHapus = [];
+
+    if (barisTerakhir >= 2) {
+      const kolomNomor = sheet
+        .getRange(2, nomorAcuan, barisTerakhir - 1, 1)
+        .getDisplayValues();
+
+      for (let i = 0; i < kolomNomor.length; i++) {
+        if (String(kolomNomor[i][0] || '').trim() === nomorCari) {
+          barisUntukHapus.push(i + 2);
+        }
+      }
+    }
+
+    // Hapus baris kelompok lama dari bawah agar indeks tidak bergeser.
+    for (let i = barisUntukHapus.length - 1; i >= 0; i--) {
+      sheet.deleteRow(barisUntukHapus[i]);
+    }
+
+    const jumlahKolom = peta.jumlahKolom;
+    const dataBaru = [];
+
+    daftarPegawai.forEach(function(p) {
+      const baris = [];
+      for (let i = 0; i < jumlahKolom; i++) {
+        baris.push('');
+      }
+
+      baris[0] = 'ST-' + Utilities.getUuid().substring(0, 8).toUpperCase();
+      baris[1] = form.nomorSurat;
+      baris[2] = form.tanggalSurat;
+      baris[3] = String(p.namaPegawai || '').trim();
+      baris[4] = String(p.nip || '').trim();
+      baris[5] = String(p.jabatan || '').trim();
+      baris[6] = form.tujuanTugas || '';
+      baris[7] = form.tanggalMulai || '';
+      baris[8] = form.tanggalSelesai || '';
+      baris[9] = form.keperluan || '';
+      baris[10] = form.penandatangan || '';
+      baris[11] = form.linkDokumen || '';
+      baris[12] = form.status || 'Draft';
+
+      tulisKolomTugas_(baris, peta, 'Dasar_Surat', form.dasarSurat || '');
+      tulisKolomTugas_(baris, peta, 'Hari', form.hari || '');
+      tulisKolomTugas_(baris, peta, 'Waktu', form.waktu || '');
+      tulisKolomTugas_(baris, peta, 'Tempat', form.tempat || '');
+      tulisKolomTugas_(baris, peta, 'Jabatan_Penandatangan', form.jabatanPenandatangan || '');
+      tulisKolomTugas_(baris, peta, 'Tembusan', form.tembusan || '');
+
+      dataBaru.push(baris);
+    });
+
+    const barisAwal = Math.max(sheet.getLastRow() + 1, 2);
+    sheet
+      .getRange(barisAwal, 1, dataBaru.length, jumlahKolom)
+      .setValues(dataBaru);
+
+    SpreadsheetApp.flush();
+
+    return {
+      sukses: true,
+      pesan: 'Surat tugas berhasil disimpan (' + dataBaru.length + ' pegawai ditugaskan).',
+      id: dataBaru[0][0],
+      nomorSurat: form.nomorSurat,
+      jumlahPegawai: dataBaru.length
+    };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ==========================================
+// SURAT TUGAS: HAPUS SATU BARIS PEGAWAI
+// ==========================================
+
+function hapusSuratTugas(id) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = ss.getSheetByName('Surat_Tugas');
+
+  if (!sheet) {
+    throw new Error('Sheet Surat_Tugas tidak ditemukan.');
+  }
+
+  const idCari = String(id || '').trim();
+  if (!idCari) {
+    throw new Error('ID surat tugas wajib disertakan.');
+  }
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+
+  try {
+    const nomorBaris = cariBarisSuratTugasById_(sheet, idCari);
+    if (nomorBaris < 0) {
+      throw new Error('Surat tugas tidak ditemukan atau sudah dihapus.');
+    }
+
+    sheet.deleteRow(nomorBaris);
+    SpreadsheetApp.flush();
+
+    return {
+      sukses: true,
+      pesan: 'Surat tugas berhasil dihapus.',
+      id: idCari
+    };
+  } finally {
+    lock.releaseLock();
+  }
+}

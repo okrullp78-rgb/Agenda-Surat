@@ -403,6 +403,101 @@
       font-size: 12px;
     }
 
+    /* ===== SURAT TUGAS: FORMAT CETAK ===== */
+    .tugas-judul {
+      text-align: center;
+      font-weight: bold;
+      font-size: 13pt;
+      margin: 6px 0 2px;
+      letter-spacing: 1px;
+    }
+
+    .tugas-nomor {
+      text-align: center;
+      font-size: 12pt;
+      margin-bottom: 14px;
+    }
+
+    .tugas-dasar {
+      margin-bottom: 14px;
+    }
+
+    .tugas-menugaskan {
+      text-align: center;
+      font-weight: bold;
+      font-size: 12pt;
+      line-height: 1.6;
+      margin: 6px 0 10px;
+    }
+
+    .tugas-kepada {
+      font-weight: bold;
+      margin: 10px 0 4px;
+    }
+
+    .tugas-tabel {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12pt;
+      margin-bottom: 6px;
+    }
+
+    .tugas-tabel th,
+    .tugas-tabel td {
+      border: 1px solid #000;
+      padding: 6px 8px;
+      vertical-align: top;
+    }
+
+    .tugas-tabel th {
+      background: #f1f5f9;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .tugas-untuk {
+      margin: 14px 0 4px;
+      font-size: 12pt;
+    }
+
+    .tugas-penutup {
+      margin-top: 16px;
+      text-align: justify;
+      white-space: pre-wrap;
+      font-size: 12pt;
+    }
+
+    .search-box {
+      margin-bottom: 12px;
+    }
+
+    .search-box input {
+      width: 100%;
+      max-width: 420px;
+    }
+
+    .pegawai-tugas-baris {
+      display: grid;
+      grid-template-columns: 1fr 180px 1fr auto;
+      gap: 8px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+
+    .pegawai-tugas-baris input {
+      padding: 8px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 14px;
+      width: 100%;
+    }
+
+    @media (max-width: 850px) {
+      .pegawai-tugas-baris {
+        grid-template-columns: 1fr;
+      }
+    }
+
     footer {
       padding: 20px;
       text-align: center;
@@ -584,6 +679,57 @@
       }
 
       body.print-surat .surat-kertas {
+        width: auto;
+        min-height: 0;
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+      }
+
+      body.print-tugas header,
+      body.print-tugas aside,
+      body.print-tugas footer,
+      body.print-tugas .no-print {
+        display: none !important;
+      }
+
+      body.print-tugas .container {
+        display: block;
+        min-height: 0;
+      }
+
+      body.print-tugas main {
+        padding: 0;
+      }
+
+      body.print-tugas .page {
+        display: none !important;
+      }
+
+      body.print-tugas #suratTugas {
+        display: block !important;
+      }
+
+      body.print-tugas #suratTugas .card {
+        display: none !important;
+      }
+
+      body.print-tugas #suratTugas .surat-print-area {
+        display: block !important;
+        padding: 0;
+        margin: 0;
+        background: white;
+        box-shadow: none;
+        border-radius: 0;
+      }
+
+      body.print-tugas .preview-wrap {
+        overflow: visible;
+        background: white;
+        padding: 0;
+      }
+
+      body.print-tugas .surat-kertas {
         width: auto;
         min-height: 0;
         margin: 0;
@@ -997,16 +1143,271 @@
     <section id="suratTugas" class="page">
       <h2 class="page-title">Surat Tugas</h2>
 
-      <div class="card">
-        <h3>Persiapan Modul Surat Tugas</h3>
-        <p>
-          Modul ini akan dikembangkan setelah tersedia contoh file Excel
-          Surat Tugas yang digunakan sekolah.
-        </p>
+      <div class="actions no-print" style="margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between;">
+        <div>
+          <span id="labelModeTugas" class="badge" style="background:#ccfbf1; color:#115e59; font-weight:bold; font-size:13px; padding:6px 12px;">
+            Mode: Surat Tugas Baru
+          </span>
+        </div>
+        <button type="button" class="btn small secondary" onclick="bukaHalamanSuratTugas(true)">
+          + Mulai Surat Tugas Baru
+        </button>
+      </div>
+
+      <div class="card no-print">
+        <h3>Formulir Surat Tugas</h3>
         <p class="muted">
-          Format nomor surat, tata letak, identitas pegawai, isi tugas,
-          dan penandatangan akan disesuaikan dengan dokumen sekolah.
+          Isi data surat dan daftar pegawai yang ditugaskan. Nomor surat diisi
+          manual sesuai format sekolah.
         </p>
+
+        <form id="formTugas">
+          <input type="hidden" id="idTugas">
+          <input type="hidden" id="nomorSuratAwalTugas">
+
+          <div class="form-grid">
+            <div class="field">
+              <label>Nomor Surat *</label>
+              <input name="nomorSurat" required
+                placeholder="Contoh: 800/123/SMPN.13/2026">
+            </div>
+
+            <div class="field">
+              <label>Tanggal Surat *</label>
+              <input type="date" name="tanggalSurat" required>
+            </div>
+
+            <div class="field full">
+              <label>Dasar Surat</label>
+              <input name="dasarSurat"
+                placeholder="Dasar hukum / dasar penugasan">
+            </div>
+
+            <div class="field full">
+              <label>Untuk / Maksud Tugas *</label>
+              <input name="tujuanTugas" required
+                placeholder="Nama kegiatan atau maksud penugasan">
+            </div>
+
+            <div class="field">
+              <label>Hari</label>
+              <input name="hari" placeholder="Contoh: Sabtu">
+            </div>
+
+            <div class="field">
+              <label>Waktu</label>
+              <input name="waktu" placeholder="Contoh: 07.00 s.d. Selesai">
+            </div>
+
+            <div class="field">
+              <label>Tanggal Mulai *</label>
+              <input type="date" name="tanggalMulai" required>
+            </div>
+
+            <div class="field">
+              <label>Tanggal Selesai</label>
+              <input type="date" name="tanggalSelesai"
+                placeholder="Kosongkan jika satu hari">
+            </div>
+
+            <div class="field full">
+              <label>Tempat</label>
+              <input name="tempat" placeholder="Lokasi pelaksanaan tugas">
+            </div>
+
+            <div class="field full">
+              <label>Keperluan</label>
+              <textarea name="keperluan" rows="3"
+                placeholder="Penjelasan keperluan tugas (opsional)"></textarea>
+            </div>
+
+            <div class="field">
+              <label>Penandatangan</label>
+              <input name="penandatangan" placeholder="Nama kepala sekolah">
+            </div>
+
+            <div class="field">
+              <label>Jabatan Penandatangan</label>
+              <input name="jabatanPenandatangan" placeholder="Contoh: Kepala Sekolah">
+            </div>
+
+            <div class="field">
+              <label>Link Dokumen</label>
+              <input name="linkDokumen" placeholder="URL dokumen (opsional)">
+            </div>
+
+            <div class="field">
+              <label>Status</label>
+              <select name="status" id="statusTugas">
+                <option>Draft</option>
+                <option>Siap Ditandatangani</option>
+                <option>Sudah Ditandatangani</option>
+                <option>Selesai</option>
+              </select>
+            </div>
+
+            <div class="field full">
+              <label>Tembusan</label>
+              <textarea name="tembusan" rows="2"
+                placeholder="Satu baris untuk setiap tembusan (opsional)"></textarea>
+            </div>
+          </div>
+
+          <h3 style="margin-top:20px;">Pegawai yang Ditugaskan</h3>
+          <p class="muted">
+            Tambahkan satu baris untuk setiap pegawai yang akan ditugaskan.
+          </p>
+
+          <div id="daftarPegawaiTugas"></div>
+
+          <button type="button" class="btn small" onclick="tambahPegawaiTugas()"
+            style="margin-top:10px;">
+            + Tambah Pegawai
+          </button>
+
+          <div class="actions">
+            <button type="button" class="btn" onclick="pratinjauSuratTugas()">
+              Pratinjau Surat
+            </button>
+
+            <button type="button" class="btn" id="btnSimpanTugas"
+              onclick="simpanSuratTugasKlien()">
+              Simpan Surat
+            </button>
+
+            <button type="button" class="btn" onclick="cetakSuratTugas()">
+              Cetak Surat
+            </button>
+
+            <button type="button" class="btn secondary"
+              onclick="kembaliKeAgendaDariTugas()">
+              Kembali ke Agenda Surat
+            </button>
+          </div>
+
+          <div id="pesanTugas" class="message"></div>
+        </form>
+      </div>
+
+      <div class="card no-print">
+        <h3>Arsip Surat Tugas</h3>
+
+        <div class="search-box">
+          <input id="cariTugas" placeholder="Cari nomor surat / pegawai / maksud tugas...">
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>No.</th>
+                <th>Tanggal</th>
+                <th>Nomor Surat</th>
+                <th>Pegawai</th>
+                <th>Jumlah</th>
+                <th>Maksud Tugas</th>
+                <th>Status</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="tabelTugas">
+              <tr>
+                <td colspan="8" class="empty">Memuat data...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card surat-print-area">
+        <h3 class="no-print">Pratinjau Surat Tugas</h3>
+        <p class="muted no-print">
+          Tampilan ini mengikuti format cetak resmi surat tugas sekolah.
+          Formulir dan menu tidak ikut tercetak.
+        </p>
+
+        <div class="preview-wrap">
+          <article class="surat-kertas" id="lembarSuratTugas">
+            <div class="kop-surat">
+              <div class="kop-pemerintah">PEMERINTAH KOTA TASIKMALAYA</div>
+              <div class="kop-nama" id="kopNamaTugas"></div>
+              <div class="kop-info" id="kopAlamatTugas"></div>
+              <div class="kop-info" id="kopTeleponTugas"></div>
+            </div>
+            <hr class="kop-garis">
+
+            <div class="tugas-judul">SURAT TUGAS</div>
+            <div class="tugas-nomor">Nomor : <span id="tNomor"></span></div>
+
+            <table class="meta-surat tugas-dasar">
+              <tr id="tBarisDasarSurat">
+                <td class="meta-label">Dasar Surat</td>
+                <td class="meta-titik">:</td>
+                <td id="tDasarSurat" colspan="3"></td>
+              </tr>
+            </table>
+
+            <div class="tugas-menugaskan">
+              KEPALA <span id="tKepalaSekolah"></span><br>
+              MENUGASKAN
+            </div>
+
+            <p class="tugas-kepada">Kepada :</p>
+            <table class="tugas-tabel">
+              <thead>
+                <tr>
+                  <th style="width:40px;">No</th>
+                  <th>Nama</th>
+                  <th>NIP</th>
+                  <th>Jabatan</th>
+                </tr>
+              </thead>
+              <tbody id="tTabelPegawai"></tbody>
+            </table>
+
+            <p class="tugas-untuk">
+              Untuk <span id="tTujuanTugas"></span> Pada :
+            </p>
+
+            <table class="meta-surat">
+              <tr id="tBarisHari">
+                <td class="meta-label">Hari</td>
+                <td class="meta-titik">:</td>
+                <td id="tHari"></td>
+              </tr>
+              <tr id="tBarisTanggalMulai">
+                <td class="meta-label">Tanggal</td>
+                <td class="meta-titik">:</td>
+                <td id="tTanggalMulai"></td>
+              </tr>
+              <tr id="tBarisWaktu">
+                <td class="meta-label">Waktu</td>
+                <td class="meta-titik">:</td>
+                <td id="tWaktu"></td>
+              </tr>
+              <tr id="tBarisTempat">
+                <td class="meta-label">Tempat</td>
+                <td class="meta-titik">:</td>
+                <td id="tTempat"></td>
+              </tr>
+            </table>
+
+            <p class="tugas-penutup" id="tPenutup"></p>
+
+            <div class="ttd-surat">
+              <div id="tKota"></div>
+              <div id="tTanggalSurat"></div>
+              <div id="tJabatanTtd"></div>
+              <div class="ttd-spasi"></div>
+              <div id="tNamaTtd"></div>
+            </div>
+
+            <div class="tembusan-surat" id="tBlokTembusan">
+              <div>Tembusan:</div>
+              <div id="tTembusan"></div>
+            </div>
+          </article>
+        </div>
       </div>
     </section>
 
@@ -1155,6 +1556,10 @@
 
       if (button.dataset.page === 'buatSuratKeluar') {
         bukaHalamanBuatSurat(true);
+      }
+
+      if (button.dataset.page === 'suratTugas') {
+        bukaHalamanSuratTugas();
       }
 
       if (button.dataset.page === 'agenda') {
@@ -2341,6 +2746,566 @@
     });
   }
 
+  // ==========================================
+  // SURAT TUGAS: FRONTEND
+  // ==========================================
+
+  var pegawaiTugasSehari = [];
+
+  function bukaHalamanSuratTugas(resetForm) {
+    terapkanPengaturanKopTugas();
+
+    if (resetForm) {
+      document.getElementById('formTugas').reset();
+      document.getElementById('idTugas').value = '';
+      document.getElementById('nomorSuratAwalTugas').value = '';
+      document.getElementById('labelModeTugas').textContent =
+        'Mode: Surat Tugas Baru';
+
+      document.getElementById('daftarPegawaiTugas').innerHTML = '';
+      pegawaiTugasSehari = [];
+      tambahPegawaiTugas();
+      kosongPratinjauTugas();
+    }
+
+    muatSuratTugas();
+  }
+
+  // Mengisi blok kop pratinjau dari pengaturan yang sudah dimuat.
+  function terapkanPengaturanKopTugas() {
+    document.getElementById('kopNamaTugas').textContent =
+      pengaturanKop.namaSekolah || '';
+
+    var alamat = pengaturanKop.alamat || '';
+    document.getElementById('kopAlamatTugas').textContent = alamat;
+
+    var telepon = pengaturanKop.telepon || '';
+    document.getElementById('kopTeleponTugas').textContent = telepon;
+
+    document.getElementById('tKepalaSekolah').textContent =
+      pengaturanKop.namaSekolah || '';
+  }
+
+  // Menambah satu baris input pegawai pada daftar dinamis.
+  function tambahPegawaiTugas(data) {
+    var wadah = document.getElementById('daftarPegawaiTugas');
+    var baris = document.createElement('div');
+    baris.className = 'pegawai-tugas-baris';
+
+    var inputNama = document.createElement('input');
+    inputNama.type = 'text';
+    inputNama.placeholder = 'Nama pegawai';
+    inputNama.className = 'pt-nama';
+    inputNama.value = (data && data.namaPegawai) || '';
+
+    var inputNip = document.createElement('input');
+    inputNip.type = 'text';
+    inputNip.placeholder = 'NIP';
+    inputNip.className = 'pt-nip';
+    inputNip.value = (data && data.nip) || '';
+
+    var inputJabatan = document.createElement('input');
+    inputJabatan.type = 'text';
+    inputJabatan.placeholder = 'Jabatan';
+    inputJabatan.className = 'pt-jabatan';
+    inputJabatan.value = (data && data.jabatan) || '';
+
+    var btnHapus = document.createElement('button');
+    btnHapus.type = 'button';
+    btnHapus.className = 'btn small';
+    btnHapus.style.background = '#dc2626';
+    btnHapus.style.color = '#ffffff';
+    btnHapus.textContent = 'Hapus';
+    btnHapus.addEventListener('click', function() {
+      wadah.removeChild(baris);
+    });
+
+    baris.appendChild(inputNama);
+    baris.appendChild(inputNip);
+    baris.appendChild(inputJabatan);
+    baris.appendChild(btnHapus);
+    wadah.appendChild(baris);
+
+    inputNama.focus();
+  }
+
+  // Mengumpulkan semua baris pegawai yang sudah diisi.
+  function ambilDaftarPegawaiTugas() {
+    var barisEls = document.querySelectorAll('#daftarPegawaiTugas .pegawai-tugas-baris');
+    var hasil = [];
+
+    barisEls.forEach(function(baris) {
+      var nama = baris.querySelector('.pt-nama').value.trim();
+      if (!nama) {
+        return;
+      }
+
+      hasil.push({
+        namaPegawai: nama,
+        nip: baris.querySelector('.pt-nip').value.trim(),
+        jabatan: baris.querySelector('.pt-jabatan').value.trim()
+      });
+    });
+
+    return hasil;
+  }
+
+  function muatSuratTugas() {
+    var tbody = document.getElementById('tabelTugas');
+    tbody.innerHTML = '';
+
+    var trKosong = document.createElement('tr');
+    var tdKosong = document.createElement('td');
+    tdKosong.colSpan = 8;
+    tdKosong.className = 'empty';
+    tdKosong.textContent = 'Memuat data...';
+    trKosong.appendChild(tdKosong);
+    tbody.appendChild(trKosong);
+
+    google.script.run
+      .withSuccessHandler(function(data) {
+        arsipTugasLengkap = kelompokkanSuratTugas_(data || []);
+        tampilkanTabelTugas(arsipTugasLengkap);
+      })
+      .withFailureHandler(function(error) {
+        tampilkanTabelTugas([]);
+        var td = document.createElement('td');
+        td.colSpan = 8;
+        td.className = 'empty';
+        td.textContent = 'Gagal memuat surat tugas: ' + error.message;
+        tbody.appendChild(td);
+      })
+      .ambilSuratTugas();
+  }
+
+  // Mengelompokkan baris per Nomor_Surat agar satu surat tampil satu baris.
+  function kelompokkanSuratTugas_(data) {
+    var urutan = [];
+    var peta = {};
+
+    data.forEach(function(surat) {
+      var nomor = String(surat.nomorSurat || '').trim();
+
+      if (!peta[nomor]) {
+        peta[nomor] = {
+          id: surat.id,
+          nomorSurat: nomor,
+          tanggalSurat: surat.tanggalSurat,
+          tujuanTugas: surat.tujuanTugas,
+          status: surat.status,
+          pegawai: [],
+          jumlah: 0
+        };
+        urutan.push(peta[nomor]);
+      }
+
+      peta[nomor].pegawai.push(surat.namaPegawai || '');
+      peta[nomor].jumlah += 1;
+    });
+
+    urutan.forEach(function(item) {
+      item.daftarNama = item.pegawai.join(', ');
+    });
+
+    return urutan;
+  }
+
+  function tampilkanTabelTugas(data) {
+    var tbody = document.getElementById('tabelTugas');
+    tbody.innerHTML = '';
+
+    if (!data.length) {
+      var trKosong = document.createElement('tr');
+      var tdKosong = document.createElement('td');
+      tdKosong.colSpan = 8;
+      tdKosong.className = 'empty';
+      tdKosong.textContent = 'Belum ada surat tugas.';
+      trKosong.appendChild(tdKosong);
+      tbody.appendChild(trKosong);
+      return;
+    }
+
+    data.forEach(function(item, index) {
+      var tr = document.createElement('tr');
+
+      tr.appendChild(buatSel(index + 1));
+      tr.appendChild(buatSel(item.tanggalSurat || '-'));
+      tr.appendChild(buatSel(item.nomorSurat || '-'));
+      tr.appendChild(buatSel(item.daftarNama || '-'));
+      tr.appendChild(buatSel(item.jumlah + ' orang'));
+      tr.appendChild(buatSel(item.tujuanTugas || '-'));
+      tr.appendChild(buatSel(item.status || '-'));
+
+      var tdAksi = document.createElement('td');
+      tdAksi.style.whiteSpace = 'nowrap';
+
+      var btnBuka = document.createElement('button');
+      btnBuka.type = 'button';
+      btnBuka.className = 'btn small';
+      btnBuka.textContent = 'Edit';
+      btnBuka.style.marginRight = '5px';
+      btnBuka.addEventListener('click', function() {
+        bukaSuratTugasUntukEdit(item.id);
+      });
+      tdAksi.appendChild(btnBuka);
+
+      var btnHapus = document.createElement('button');
+      btnHapus.type = 'button';
+      btnHapus.className = 'btn small';
+      btnHapus.style.background = '#dc2626';
+      btnHapus.style.color = '#ffffff';
+      btnHapus.textContent = 'Hapus';
+      btnHapus.addEventListener('click', function() {
+        konfirmasiHapusSuratTugas(item.id, item.nomorSurat, item.jumlah);
+      });
+      tdAksi.appendChild(btnHapus);
+
+      tr.appendChild(tdAksi);
+      tbody.appendChild(tr);
+    });
+  }
+
+  // Validasi & data formulir Surat Tugas.
+  function dataFormSuratTugas() {
+    var data = ambilDataForm(document.getElementById('formTugas'));
+    data.id = document.getElementById('idTugas').value;
+    data.nomorSuratAwal = document.getElementById('nomorSuratAwalTugas').value;
+    data.pegawai = ambilDaftarPegawaiTugas();
+    return data;
+  }
+
+  function validasiSuratTugas(data) {
+    if (!data.nomorSurat || !data.tanggalSurat) {
+      return 'Nomor surat dan tanggal surat wajib diisi.';
+    }
+
+    if (!data.tujuanTugas || !String(data.tujuanTugas).trim()) {
+      return 'Untuk / maksud tugas wajib diisi.';
+    }
+
+    if (!data.tanggalMulai) {
+      return 'Tanggal mulai wajib diisi.';
+    }
+
+    if (!data.pegawai.length) {
+      return 'Minimal satu pegawai yang ditugasi wajib diisi.';
+    }
+
+    return '';
+  }
+
+  function kosongPratinjauTugas() {
+    document.getElementById('tNomor').textContent = '';
+    document.getElementById('tDasarSurat').textContent = '';
+    document.getElementById('tTujuanTugas').textContent = '';
+    document.getElementById('tHari').textContent = '';
+    document.getElementById('tTanggalMulai').textContent = '';
+    document.getElementById('tWaktu').textContent = '';
+    document.getElementById('tTempat').textContent = '';
+    document.getElementById('tPenutup').textContent = '';
+    document.getElementById('tKota').textContent = '';
+    document.getElementById('tTanggalSurat').textContent = '';
+    document.getElementById('tJabatanTtd').textContent = '';
+    document.getElementById('tNamaTtd').textContent = '';
+    document.getElementById('tTembusan').textContent = '';
+    document.getElementById('tTabelPegawai').innerHTML = '';
+
+    document.getElementById('tBarisDasarSurat').style.display = 'none';
+    document.getElementById('tBarisHari').style.display = 'none';
+    document.getElementById('tBarisWaktu').style.display = 'none';
+    document.getElementById('tBarisTempat').style.display = 'none';
+    document.getElementById('tBlokTembusan').style.display = 'none';
+  }
+
+  // Menyusun teks tanggal (dengan atau tanpa rentang s.d.).
+  function teksRentangTanggalTugas(mulai, selesai) {
+    var tMulai = formatTanggalSurat(mulai);
+    var tSelesai = selesai ? formatTanggalSurat(selesai) : '';
+
+    if (tMulai && tSelesai && tMulai !== tSelesai) {
+      return tMulai + ' s.d. ' + tSelesai;
+    }
+
+    return tMulai || tSelesai || '';
+  }
+
+  function perbaruiPratinjauTugas() {
+    var data = dataFormSuratTugas();
+
+    document.getElementById('tNomor').textContent = data.nomorSurat || '';
+
+    var dasar = String(data.dasarSurat || '').trim();
+    document.getElementById('tDasarSurat').textContent = dasar;
+    document.getElementById('tBarisDasarSurat').style.display =
+      dasar ? '' : 'none';
+
+    document.getElementById('tTujuanTugas').textContent =
+      data.tujuanTugas || '';
+
+    var hari = String(data.hari || '').trim();
+    document.getElementById('tHari').textContent = hari;
+    document.getElementById('tBarisHari').style.display = hari ? '' : 'none';
+
+    var rentang = teksRentangTanggalTugas(data.tanggalMulai, data.tanggalSelesai);
+    document.getElementById('tTanggalMulai').textContent = rentang;
+    document.getElementById('tBarisTanggalMulai').style.display =
+      rentang ? '' : 'none';
+
+    var waktu = String(data.waktu || '').trim();
+    document.getElementById('tWaktu').textContent = waktu;
+    document.getElementById('tBarisWaktu').style.display = waktu ? '' : 'none';
+
+    var tempat = String(data.tempat || '').trim();
+    document.getElementById('tTempat').textContent = tempat;
+    document.getElementById('tBarisTempat').style.display = tempat ? '' : 'none';
+
+    document.getElementById('tPenutup').textContent =
+      'Demikian surat tugas ini kami berikan untuk dilaksanakan ' +
+      'sebagaimana mestinya.';
+
+    var kota = pengaturanKop.kota || 'Tasikmalaya';
+    var tanggalTeks = formatTanggalSurat(data.tanggalSurat);
+    document.getElementById('tKota').textContent =
+      'Dikeluarkan di: ' + kota;
+    document.getElementById('tTanggalSurat').textContent =
+      'Pada Tanggal: ' + tanggalTeks;
+
+    document.getElementById('tJabatanTtd').textContent =
+      data.jabatanPenandatangan || 'Kepala Sekolah';
+    document.getElementById('tNamaTtd').textContent = data.penandatangan || '';
+
+    var tembusan = String(data.tembusan || '').trim();
+    document.getElementById('tTembusan').textContent = tembusan;
+    document.getElementById('tBlokTembusan').style.display =
+      tembusan ? '' : 'none';
+
+    var tbody = document.getElementById('tTabelPegawai');
+    tbody.innerHTML = '';
+
+    data.pegawai.forEach(function(p, i) {
+      var tr = document.createElement('tr');
+      tr.appendChild(buatSel(i + 1));
+      tr.appendChild(buatSel(p.namaPegawai || ''));
+      tr.appendChild(buatSel(p.nip || '-'));
+      tr.appendChild(buatSel(p.jabatan || '-'));
+      tbody.appendChild(tr);
+    });
+  }
+
+  function pratinjauSuratTugas() {
+    var data = dataFormSuratTugas();
+    var pesan = document.getElementById('pesanTugas');
+    var error = validasiSuratTugas(data);
+
+    if (error) {
+      tampilkanPesan(pesan, error, 'error');
+      return;
+    }
+
+    terapkanPengaturanKopTugas();
+    perbaruiPratinjauTugas();
+    tampilkanPesan(pesan, 'Pratinjau surat tugas diperbarui.', 'success');
+    document.getElementById('lembarSuratTugas').scrollIntoView({
+      behavior: 'smooth'
+    });
+  }
+
+  // Simpan / edit / hapus / cetak Surat Tugas.
+  function simpanSuratTugasKlien() {
+    var data = dataFormSuratTugas();
+    var pesan = document.getElementById('pesanTugas');
+    var error = validasiSuratTugas(data);
+
+    if (error) {
+      tampilkanPesan(pesan, error, 'error');
+      return;
+    }
+
+    var konfirmasi = confirm(
+      'Simpan surat tugas ini?\n\n' +
+      'Nomor: ' + data.nomorSurat + '\n' +
+      'Pegawai: ' + data.pegawai.length + ' orang'
+    );
+
+    if (!konfirmasi) {
+      return;
+    }
+
+    tampilkanPesan(pesan, 'Menyimpan surat tugas...', '');
+
+    var tombol = document.getElementById('btnSimpanTugas');
+    tombol.disabled = true;
+
+    google.script.run
+      .withSuccessHandler(function(hasil) {
+        tampilkanPesan(pesan, hasil.pesan, 'success');
+
+        document.getElementById('nomorSuratAwalTugas').value = data.nomorSurat;
+        document.getElementById('labelModeTugas').textContent =
+          'Mode: Edit Surat Tugas ' + data.nomorSurat;
+
+        tombol.disabled = false;
+
+        muatSuratTugas();
+        muatDashboard();
+      })
+      .withFailureHandler(function(error) {
+        tampilkanPesan(pesan, 'Gagal menyimpan surat tugas: ' + error.message, 'error');
+        tombol.disabled = false;
+      })
+      .simpanSuratTugas(data);
+  }
+
+  function bukaSuratTugasUntukEdit(id) {
+    var pesan = document.getElementById('pesanTugas');
+    tampilkanPesan(pesan, 'Memuat surat tugas...', '');
+
+    google.script.run
+      .withSuccessHandler(function(data) {
+        isiFormSuratTugas(data);
+        tampilkanPesan(pesan, 'Surat tugas dimuat untuk diedit.', 'success');
+        document.getElementById('formTugas').scrollIntoView({
+          behavior: 'smooth'
+        });
+      })
+      .withFailureHandler(function(error) {
+        tampilkanPesan(pesan, 'Gagal memuat surat tugas: ' + error.message, 'error');
+      })
+      .ambilSuratTugasById(id);
+  }
+
+  function isiFormSuratTugas(data) {
+    var form = document.getElementById('formTugas');
+    form.reset();
+
+    document.getElementById('idTugas').value = data.id || '';
+    document.getElementById('nomorSuratAwalTugas').value = data.nomorSuratAwal || data.nomorSurat || '';
+    document.getElementById('labelModeTugas').textContent =
+      'Mode: Edit Surat Tugas ' + (data.nomorSurat || '');
+
+    form.nomorSurat.value = data.nomorSurat || '';
+    form.tanggalSurat.value = uraiTanggalKeISO(data.tanggalSurat);
+    form.dasarSurat.value = data.dasarSurat || '';
+    form.tujuanTugas.value = data.tujuanTugas || '';
+    form.hari.value = data.hari || '';
+    form.waktu.value = data.waktu || '';
+    form.tanggalMulai.value = uraiTanggalKeISO(data.tanggalMulai);
+    form.tanggalSelesai.value = uraiTanggalKeISO(data.tanggalSelesai);
+    form.tempat.value = data.tempat || '';
+    form.keperluan.value = data.keperluan || '';
+    form.penandatangan.value = data.penandatangan || '';
+    form.jabatanPenandatangan.value = data.jabatanPenandatangan || '';
+    form.linkDokumen.value = data.linkDokumen || '';
+    form.tembusan.value = data.tembusan || '';
+
+    pastikanOpsiStatusSurat(form.status, data.status);
+
+    var wadah = document.getElementById('daftarPegawaiTugas');
+    wadah.innerHTML = '';
+
+    var daftar = data.pegawai && data.pegawai.length
+      ? data.pegawai
+      : [{ namaPegawai: '', nip: '', jabatan: '' }];
+
+    daftar.forEach(function(p) {
+      tambahPegawaiTugas(p);
+    });
+
+    terapkanPengaturanKopTugas();
+    perbaruiPratinjauTugas();
+  }
+
+  function konfirmasiHapusSuratTugas(id, nomorSurat, jumlah) {
+    var pesan = document.getElementById('pesanTugas');
+
+    var ya = confirm(
+      'Hapus surat tugas nomor "' + nomorSurat + '"?\n\n' +
+      'Jumlah baris pegawai terhapus: ' + jumlah + '\n' +
+      'Tindakan ini tidak dapat dibatalkan.'
+    );
+
+    if (!ya) {
+      return;
+    }
+
+    tampilkanPesan(pesan, 'Menghapus surat tugas...', '');
+
+    google.script.run
+      .withSuccessHandler(function(hasil) {
+        tampilkanPesan(pesan, hasil.pesan, 'success');
+
+        if (document.getElementById('nomorSuratAwalTugas').value === nomorSurat) {
+          bukaHalamanSuratTugas(true);
+        } else {
+          muatSuratTugas();
+        }
+
+        muatDashboard();
+      })
+      .withFailureHandler(function(error) {
+        tampilkanPesan(pesan, 'Gagal menghapus surat tugas: ' + error.message, 'error');
+      })
+      .hapusSuratTugas(id);
+  }
+
+  function cetakSuratTugas() {
+    var data = dataFormSuratTugas();
+    var error = validasiSuratTugas(data);
+
+    if (error) {
+      tampilkanPesan(document.getElementById('pesanTugas'), error, 'error');
+      return;
+    }
+
+    terapkanPengaturanKopTugas();
+    perbaruiPratinjauTugas();
+
+    document.body.classList.remove('print-mode', 'print-surat');
+    document.body.classList.add('print-tugas');
+    aturUkuranKertasCetak('@page { size: portrait; margin: 15mm; }');
+
+    window.print();
+  }
+
+  function kembaliKeAgendaDariTugas() {
+    pilihMenuHalaman('agenda');
+    muatDataLaporan();
+  }
+
+  // Listener pencarian arsip surat tugas.
+  var inputCariTugas = document.getElementById('cariTugas');
+  if (inputCariTugas) {
+    inputCariTugas.addEventListener('input', function() {
+      filterArsipSuratTugas();
+    });
+  }
+
+  var arsipTugasLengkap = [];
+
+  function filterArsipSuratTugas() {
+    var kata = String(
+      document.getElementById('cariTugas').value || ''
+    ).trim().toLowerCase();
+
+    if (!kata) {
+      tampilkanTabelTugas(arsipTugasLengkap);
+      return;
+    }
+
+    var hasil = arsipTugasLengkap.filter(function(item) {
+      var nomor = String(item.nomorSurat || '').toLowerCase();
+      var nama = String(item.daftarNama || '').toLowerCase();
+      var tujuan = String(item.tujuanTugas || '').toLowerCase();
+      return (
+        nomor.indexOf(kata) !== -1 ||
+        nama.indexOf(kata) !== -1 ||
+        tujuan.indexOf(kata) !== -1
+      );
+    });
+
+    tampilkanTabelTugas(hasil);
+  }
+
   function resetFilterLaporan() {
     document.getElementById('filterJenis').value = 'SEMUA';
     document.getElementById('filterMulai').value = '';
@@ -2363,6 +3328,7 @@
   window.addEventListener('afterprint', function() {
     document.body.classList.remove('print-mode');
     document.body.classList.remove('print-surat');
+    document.body.classList.remove('print-tugas');
   });
 
   // ==========================================
