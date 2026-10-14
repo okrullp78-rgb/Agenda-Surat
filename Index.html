@@ -611,7 +611,6 @@
   <aside class="no-print">
     <button class="menu active" data-page="dashboard">Dashboard</button>
     <button class="menu" data-page="suratMasuk">Surat Masuk</button>
-    <button class="menu" data-page="suratKeluar">Surat Keluar</button>
     <button class="menu" data-page="buatSuratKeluar">Buat Surat</button>
     <button class="menu" data-page="suratTugas">Surat Tugas</button>
     <button class="menu" data-page="agenda">Agenda Surat</button>
@@ -796,149 +795,6 @@
       </div>
     </section>
 
-    <!-- SURAT KELUAR -->
-    <section id="suratKeluar" class="page">
-      <h2 class="page-title">Surat Keluar</h2>
-
-      <div class="card no-print">
-        <h3>
-          Formulir Pencatatan Surat Keluar
-          <span id="indikatorModeKeluar" class="badge" style="display:none; margin-left: 8px; background: #ccfbf1; color: #115e59; font-weight: normal; font-size: 12px;">Mode Edit</span>
-        </h3>
-
-        <form id="formKeluar">
-          <input type="hidden" name="idSurat" id="idSuratKeluarCatatan">
-
-          <div class="form-grid">
-
-            <div class="field">
-              <label>Nomor Surat *</label>
-              <input name="nomorSurat" required
-                placeholder="Nomor surat keluar">
-            </div>
-
-            <div class="field">
-              <label>Tanggal Surat *</label>
-              <input type="date" name="tanggalSurat" required>
-            </div>
-
-            <div class="field full">
-              <label>Tujuan Surat *</label>
-              <input name="tujuanSurat" required
-                placeholder="Instansi atau penerima surat">
-            </div>
-
-            <div class="field full">
-              <label>Perihal *</label>
-              <input name="perihal" required
-                placeholder="Perihal surat keluar">
-            </div>
-
-            <div class="field">
-              <label>Kategori</label>
-              <select name="kategori">
-                <option value="">Pilih kategori</option>
-                <option>Undangan</option>
-                <option>Pemberitahuan</option>
-                <option>Permohonan</option>
-                <option>Dinas</option>
-                <option>Keuangan</option>
-                <option>Kepegawaian</option>
-                <option>Lainnya</option>
-              </select>
-            </div>
-
-            <div class="field">
-              <label>Penandatangan</label>
-              <input name="penandatangan"
-                placeholder="Nama/jabatan penandatangan">
-            </div>
-
-            <div class="field">
-              <label>Status Surat</label>
-              <select name="status">
-                <option>Draft</option>
-                <option>Siap Ditandatangani</option>
-                <option>Sudah Ditandatangani</option>
-                <option>Sudah Dikirim</option>
-                <option>Selesai</option>
-              </select>
-            </div>
-
-            <div class="field">
-              <label>Link Dokumen</label>
-              <input type="url" name="linkDokumen"
-                placeholder="Tautan dokumen jika ada">
-            </div>
-
-            <div class="field full">
-              <label>Keterangan</label>
-              <textarea name="keterangan" rows="2"></textarea>
-            </div>
-
-          </div>
-
-          <div class="actions">
-            <button type="submit" class="btn" id="btnSimpanKeluar">
-              Simpan Surat Keluar
-            </button>
-
-            <button type="button" class="btn secondary" id="btnBatalEditKeluar" style="display:none;" onclick="batalEditCatatanKeluar()">
-              Batal Edit
-            </button>
-
-            <button type="reset" class="btn secondary" id="btnResetKeluar" onclick="batalEditCatatanKeluar()">
-              Bersihkan Formulir
-            </button>
-          </div>
-
-          <div id="pesanKeluar" class="message"></div>
-        </form>
-      </div>
-
-      <div class="card">
-        <h3>Daftar Surat Keluar</h3>
-
-        <input class="search-box no-print" id="cariKeluar"
-          placeholder="Cari nomor, tujuan, atau perihal...">
-
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>ID Agenda</th>
-                <th>Tanggal Surat</th>
-                <th>Nomor Surat</th>
-                <th>Tujuan Surat</th>
-                <th>Perihal</th>
-                <th>Kategori</th>
-                <th>Penandatangan</th>
-                <th>Status</th>
-                <th>Dokumen</th>
-                <th class="no-print">Aksi</th>
-              </tr>
-            </thead>
-
-            <tbody id="tabelKeluar">
-              <tr>
-                <td colspan="10" class="empty">Memuat data...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="actions no-print">
-          <button class="btn" onclick="bukaHalamanBuatSurat(true)">
-            Buat Surat Keluar
-          </button>
-
-          <button class="btn" onclick="muatSuratKeluar()">
-            Muat Ulang Data
-          </button>
-        </div>
-      </div>
-    </section>
-
     <!-- PEMBUATAN SURAT KELUAR -->
     <section id="buatSuratKeluar" class="page">
       <h2 class="page-title no-print">Pembuatan Surat Keluar</h2>
@@ -1068,8 +924,8 @@
             </button>
 
             <button type="button" class="btn secondary"
-              onclick="kembaliKeDaftarSuratKeluar()">
-              Kembali ke Daftar Surat Keluar
+              onclick="kembaliKeAgendaSurat()">
+              Kembali ke Agenda Surat
             </button>
           </div>
 
@@ -1241,12 +1097,13 @@
                 <th>Asal / Tujuan</th>
                 <th>Perihal</th>
                 <th>Status</th>
+                <th class="no-print">Aksi</th>
               </tr>
             </thead>
 
             <tbody id="tabelLaporan">
               <tr>
-                <td colspan="7" class="empty">
+                <td colspan="8" class="empty">
                   Klik Tampilkan Laporan untuk memuat data.
                 </td>
               </tr>
@@ -1294,10 +1151,6 @@
 
       if (button.dataset.page === 'suratMasuk') {
         muatSuratMasuk();
-      }
-
-      if (button.dataset.page === 'suratKeluar') {
-        muatSuratKeluar();
       }
 
       if (button.dataset.page === 'buatSuratKeluar') {
@@ -1740,140 +1593,24 @@
       tampilkanSuratMasuk(hasil);
     });
 
-  // ==========================================
-  // SURAT KELUAR: SIMPAN & EDIT CATATAN
-  // ==========================================
-
-  document.getElementById('formKeluar')
-    .addEventListener('submit', function(event) {
-      event.preventDefault();
-
-      var form = event.target;
-      var tombol = document.getElementById('btnSimpanKeluar');
-      var pesan = document.getElementById('pesanKeluar');
-      var data = ambilDataForm(form);
-      var sedangEdit = Boolean(data.idSurat);
-
-      if (!data.idSurat) {
-        tampilkanPesan(
-          pesan,
-          'Pembuatan surat keluar baru hanya dilakukan melalui menu Buat Surat. Formulir ini dipakai untuk mengedit catatan surat yang sudah ada (gunakan tombol Edit pada daftar).',
-          'error'
-        );
-        return;
-      }
-
-      tombol.disabled = true;
-      tombol.textContent = sedangEdit ? 'Memperbarui...' : 'Menyimpan...';
-
-      tampilkanPesan(pesan, sedangEdit ? 'Memperbarui surat keluar...' : 'Menyimpan surat keluar...', '');
-
-      google.script.run
-        .withSuccessHandler(function(hasil) {
-          tampilkanPesan(
-            pesan,
-            hasil.pesan + ' ID agenda: ' + hasil.id,
-            'success'
-          );
-
-          batalEditCatatanKeluar();
-          tombol.disabled = false;
-
-          muatSuratKeluar();
-          muatDashboard();
-        })
-        .withFailureHandler(function(error) {
-          tampilkanPesan(
-            pesan,
-            'Gagal menyimpan surat keluar: ' + error.message,
-            'error'
-          );
-
-          tombol.disabled = false;
-          tombol.textContent = sedangEdit ? 'Perbarui Surat Keluar' : 'Simpan Surat Keluar';
-        })
-        .simpanSuratKeluar(data);
-    });
-
-  function mulaiEditCatatanKeluar(id) {
-    var form = document.getElementById('formKeluar');
-    var pesan = document.getElementById('pesanKeluar');
-    var tombol = document.getElementById('btnSimpanKeluar');
-
-    tampilkanPesan(pesan, 'Mengambil data surat keluar...', '');
-
-    google.script.run
-      .withSuccessHandler(function(surat) {
-        if (!surat) {
-          tampilkanPesan(pesan, 'Data surat keluar tidak ditemukan.', 'error');
-          return;
-        }
-
-        document.getElementById('idSuratKeluarCatatan').value = surat.id || '';
-        form.nomorSurat.value = surat.nomorSurat || '';
-        form.tanggalSurat.value = uraiTanggalKeISO(surat.tanggalSurat);
-        form.tujuanSurat.value = surat.tujuanSurat || '';
-        form.perihal.value = surat.perihal || '';
-        form.kategori.value = surat.kategori || '';
-        form.penandatangan.value = surat.penandatangan || '';
-        pastikanOpsiStatusSurat(form.status, surat.status || 'Draft');
-        form.linkDokumen.value = surat.linkDokumen || '';
-        form.keterangan.value = surat.keterangan || '';
-
-        var indikator = document.getElementById('indikatorModeKeluar');
-        if (indikator) {
-          indikator.textContent = 'Mode Edit: ' + surat.id;
-          indikator.style.display = 'inline-block';
-        }
-
-        var btnBatal = document.getElementById('btnBatalEditKeluar');
-        if (btnBatal) btnBatal.style.display = 'inline-block';
-
-        tombol.textContent = 'Perbarui Surat Keluar';
-
-        tampilkanPesan(pesan, 'Data catatan surat siap diedit.', 'success');
-        form.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      })
-      .withFailureHandler(function(error) {
-        tampilkanPesan(pesan, 'Gagal mengambil data surat: ' + error.message, 'error');
-      })
-      .ambilSuratKeluarById(id);
-  }
-
-  function batalEditCatatanKeluar() {
-    var form = document.getElementById('formKeluar');
-    form.reset();
-    document.getElementById('idSuratKeluarCatatan').value = '';
-    var indikator = document.getElementById('indikatorModeKeluar');
-    if (indikator) indikator.style.display = 'none';
-    var btnBatal = document.getElementById('btnBatalEditKeluar');
-    if (btnBatal) btnBatal.style.display = 'none';
-    var tombol = document.getElementById('btnSimpanKeluar');
-    if (tombol) {
-      tombol.disabled = false;
-      tombol.textContent = 'Simpan Surat Keluar';
-    }
-  }
-
   function konfirmasiHapusSuratKeluar(id, nomorSurat) {
     var labelNomor = nomorSurat && nomorSurat !== '-' ? ' (Nomor: ' + nomorSurat + ')' : '';
     if (!confirm('Apakah Anda yakin ingin menghapus surat keluar dengan ID: ' + id + labelNomor + '?\n\nTindakan ini tidak dapat dibatalkan.')) {
       return;
     }
 
-    var pesan = document.getElementById('pesanKeluar');
+    var pesan = document.getElementById('pesanLaporan');
     tampilkanPesan(pesan, 'Menghapus surat keluar...', '');
 
     google.script.run
       .withSuccessHandler(function(hasil) {
         tampilkanPesan(pesan, hasil.pesan, 'success');
-        if (document.getElementById('idSuratKeluarCatatan').value === id) {
-          batalEditCatatanKeluar();
-        }
+
         if (document.getElementById('idSuratKeluar').value === id) {
           bukaHalamanBuatSurat(true);
         }
-        muatSuratKeluar();
+
+        muatDataLaporan();
         muatDashboard();
       })
       .withFailureHandler(function(error) {
@@ -1882,128 +1619,9 @@
       .hapusSuratKeluar(id);
   }
 
-  // ==========================================
-  // SURAT KELUAR: TAMPILKAN DATA
-  // ==========================================
-
-  var dataSuratKeluar = [];
-
-  function muatSuratKeluar() {
-    var tbody = document.getElementById('tabelKeluar');
-
-    tbody.innerHTML =
-      '<tr><td colspan="10" class="empty">Memuat data...</td></tr>';
-
-    google.script.run
-      .withSuccessHandler(function(data) {
-        dataSuratKeluar = data || [];
-        tampilkanSuratKeluar(dataSuratKeluar);
-      })
-      .withFailureHandler(function(error) {
-        tbody.innerHTML = '';
-
-        var tr = document.createElement('tr');
-        var td = buatSel('Gagal memuat data: ' + error.message);
-        td.colSpan = 10;
-        td.className = 'empty';
-
-        tr.appendChild(td);
-        tbody.appendChild(tr);
-      })
-      .ambilSuratKeluar();
-  }
-
-  function tampilkanSuratKeluar(data) {
-    var tbody = document.getElementById('tabelKeluar');
-    tbody.innerHTML = '';
-
-    if (!data.length) {
-      var trKosong = document.createElement('tr');
-      var tdKosong = buatSel('Belum ada data surat keluar.');
-      tdKosong.colSpan = 10;
-      tdKosong.className = 'empty';
-
-      trKosong.appendChild(tdKosong);
-      tbody.appendChild(trKosong);
-      return;
-    }
-
-    data.forEach(function(surat) {
-      var tr = document.createElement('tr');
-
-      tr.appendChild(buatSel(surat.id));
-      tr.appendChild(buatSel(surat.tanggalSurat));
-      tr.appendChild(buatSel(surat.nomorSurat));
-      tr.appendChild(buatSel(surat.tujuanSurat));
-      tr.appendChild(buatSel(surat.perihal));
-      tr.appendChild(buatSel(surat.kategori));
-      tr.appendChild(buatSel(surat.penandatangan));
-      tr.appendChild(buatSel(surat.status));
-      tr.appendChild(buatLinkDokumen(surat.linkDokumen));
-
-      var tdAksi = document.createElement('td');
-      tdAksi.className = 'no-print';
-      tdAksi.style.whiteSpace = 'nowrap';
-
-      var btnBuka = document.createElement('button');
-      btnBuka.type = 'button';
-      btnBuka.className = 'btn small';
-      btnBuka.textContent = 'Buka';
-      btnBuka.style.marginRight = '5px';
-      btnBuka.addEventListener('click', function() {
-        bukaPembuatanSuratKeluar(surat.id);
-      });
-      tdAksi.appendChild(btnBuka);
-
-      var btnEditCatatan = document.createElement('button');
-      btnEditCatatan.type = 'button';
-      btnEditCatatan.className = 'btn small secondary';
-      btnEditCatatan.style.background = '#0284c7';
-      btnEditCatatan.style.color = '#ffffff';
-      btnEditCatatan.style.marginRight = '5px';
-      btnEditCatatan.textContent = 'Edit';
-      btnEditCatatan.addEventListener('click', function() {
-        mulaiEditCatatanKeluar(surat.id);
-      });
-      tdAksi.appendChild(btnEditCatatan);
-
-      var btnHapus = document.createElement('button');
-      btnHapus.type = 'button';
-      btnHapus.className = 'btn small secondary';
-      btnHapus.style.background = '#dc2626';
-      btnHapus.style.color = '#ffffff';
-      btnHapus.textContent = 'Hapus';
-      btnHapus.addEventListener('click', function() {
-        konfirmasiHapusSuratKeluar(surat.id, surat.nomorSurat);
-      });
-      tdAksi.appendChild(btnHapus);
-
-      tr.appendChild(tdAksi);
-
-      tbody.appendChild(tr);
-    });
-  }
-
-  document.getElementById('cariKeluar')
-    .addEventListener('input', function() {
-      var kata = this.value.toLowerCase().trim();
-
-      var hasil = dataSuratKeluar.filter(function(surat) {
-        return [
-          surat.id,
-          surat.nomorSurat,
-          surat.tujuanSurat,
-          surat.perihal,
-          surat.kategori,
-          surat.jenisSurat,
-          surat.status
-        ].some(function(nilai) {
-          return String(nilai || '').toLowerCase().includes(kata);
-        });
-      });
-
-      tampilkanSuratKeluar(hasil);
-    });
+  // Daftar Surat Keluar tidak lagi menjadi halaman terpisah.
+  // Arsip Surat Keluar tersedia pada halaman Agenda Surat, termasuk
+  // tombol "Buka / Edit" dan "Hapus" untuk setiap baris Surat Keluar.
 
   // ==========================================
   // PEMBUATAN SURAT KELUAR
@@ -2164,9 +1782,9 @@
     siapkanHalamanBuatSurat();
   }
 
-  function kembaliKeDaftarSuratKeluar() {
-    pilihMenuHalaman('suratKeluar');
-    muatSuratKeluar();
+  function kembaliKeAgendaSurat() {
+    pilihMenuHalaman('agenda');
+    muatDataLaporan();
   }
 
   function tanggalKeISOLokal(nilai) {
@@ -2323,7 +1941,6 @@
           'success'
         );
         muatDashboard();
-        muatSuratKeluar();
       })
       .withFailureHandler(function(err) {
         tampilkanPesan(
@@ -2669,7 +2286,7 @@
     if (!data.length) {
       var trKosong = document.createElement('tr');
       var tdKosong = buatSel('Tidak ada data sesuai filter laporan.');
-      tdKosong.colSpan = 7;
+      tdKosong.colSpan = 8;
       tdKosong.className = 'empty';
 
       trKosong.appendChild(tdKosong);
@@ -2687,6 +2304,38 @@
       tr.appendChild(buatSel(item.pihak));
       tr.appendChild(buatSel(item.perihal));
       tr.appendChild(buatSel(item.status));
+
+      var tdAksi = document.createElement('td');
+      tdAksi.className = 'no-print';
+
+      if (item.jenis === 'Surat Keluar' && item.id) {
+        tdAksi.style.whiteSpace = 'nowrap';
+
+        var btnBuka = document.createElement('button');
+        btnBuka.type = 'button';
+        btnBuka.className = 'btn small';
+        btnBuka.textContent = 'Buka / Edit';
+        btnBuka.style.marginRight = '5px';
+        btnBuka.addEventListener('click', function() {
+          bukaPembuatanSuratKeluar(item.id);
+        });
+        tdAksi.appendChild(btnBuka);
+
+        var btnHapusAgenda = document.createElement('button');
+        btnHapusAgenda.type = 'button';
+        btnHapusAgenda.className = 'btn small secondary';
+        btnHapusAgenda.style.background = '#dc2626';
+        btnHapusAgenda.style.color = '#ffffff';
+        btnHapusAgenda.textContent = 'Hapus';
+        btnHapusAgenda.addEventListener('click', function() {
+          konfirmasiHapusSuratKeluar(item.id, item.nomor);
+        });
+        tdAksi.appendChild(btnHapusAgenda);
+      } else {
+        tdAksi.textContent = '-';
+      }
+
+      tr.appendChild(tdAksi);
 
       tbody.appendChild(tr);
     });
