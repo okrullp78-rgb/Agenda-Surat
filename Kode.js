@@ -277,6 +277,95 @@ function siapkanDatabase() {
       'Status'
     ],
 
+    // Dokumen terkait Surat Tugas (format mengacu workbook sekolah).
+    // Semua ditambahkan di akhir agar struktur sheet lama tidak berubah.
+    'Surat_Tugas_Siswa': [
+      'ID_Tugas',
+      'Nomor_Surat',
+      'Tanggal_Surat',
+      'Nama_Siswa',
+      'No_Induk',
+      'Kelas',
+      'Tujuan_Tugas',
+      'Tanggal_Mulai',
+      'Tanggal_Selesai',
+      'Keperluan',
+      'Penandatangan',
+      'Link_Dokumen',
+      'Status'
+    ],
+
+    'SPPD': [
+      'ID_SPPD',
+      'Nomor_Surat',
+      'Pengguna_Anggaran',
+      'Nama_Pegawai',
+      'NIP',
+      'Pangkat_Golongan',
+      'Jabatan',
+      'Tingkat_Biaya',
+      'Maksud',
+      'Alat_Angkut',
+      'Tempat_Berangkat',
+      'Tempat_Tujuan',
+      'Lama_Perjalanan',
+      'Tanggal_Berangkat',
+      'Tanggal_Kembali',
+      'Instansi',
+      'Mata_Anggaran',
+      'Keterangan',
+      'Status'
+    ],
+
+    'SPPD_Lembar2': [
+      'ID_Lembar',
+      'Nomor_Surat',
+      'Nama_Pegawai',
+      'Urutan',
+      'Tiba_Di',
+      'Berangkat_Dari',
+      'Ke',
+      'Tanggal',
+      'Status'
+    ],
+
+    'Nota_Dinas': [
+      'ID_Nota',
+      'Nomor_Surat',
+      'Kepada_Yth',
+      'Dari',
+      'Perihal',
+      'Tempat_Kegiatan',
+      'Tanggal_Pelaksanaan',
+      'Dasar_Penugasan',
+      'Hasil',
+      'Usul',
+      'Status'
+    ],
+
+    'Daftar_Penyerahan': [
+      'ID_Penyerahan',
+      'Nomor_Surat',
+      'Nama_Pegawai',
+      'NIP',
+      'Golongan',
+      'Volume_Hari',
+      'Tarif',
+      'Jumlah',
+      'Status'
+    ],
+
+    'Daftar_Penyerahan_Siswa': [
+      'ID_Penyerahan',
+      'Nomor_Surat',
+      'Nama_Siswa',
+      'Kelas',
+      'Volume_Hari',
+      'Tarif',
+      'Jumlah',
+      'Status'
+    ],
+
     'Pengaturan': [
       'Parameter',
       'Nilai',
@@ -1202,3 +1291,508 @@ function hapusSuratTugas(id) {
     lock.releaseLock();
   }
 }
+
+// ==========================================
+// HELPER UMUM UNTUK SHEET DOKUMEN TERKAIT
+// ==========================================
+
+// Mencari baris berdasarkan ID (kolom A). Dipakai lintas sheet terkait.
+function cariBarisTugasById_(sheet, id) {
+  const idCari = String(id || '').trim();
+  if (!idCari) return -1;
+
+  const barisTerakhir = sheet.getLastRow();
+  if (barisTerakhir < 2) return -1;
+
+  const ids = sheet.getRange(2, 1, barisTerakhir - 1, 1).getDisplayValues();
+  for (let i = 0; i < ids.length; i++) {
+    if (String(ids[i][0] || '').trim() === idCari) {
+      return i + 2;
+    }
+  }
+  return -1;
+}
+
+// Menulis nilai ke kolom berdasarkan nama header (1-based).
+function tulisKolom_(baris, peta, nama, nilai) {
+  if (!peta.indeks[nama]) return;
+  baris[peta.indeks[nama] - 1] = nilai;
+}
+
+// Membaca nilai kolom berdasarkan nama header, dengan indeks cadangan.
+function bacaKolom_(row, peta, nama, cadangan) {
+  if (peta.indeks[nama]) {
+    return String(row[peta.indeks[nama] - 1] || '').trim();
+  }
+  if (cadangan >= 0 && cadangan < row.length) {
+    return String(row[cadangan] || '').trim();
+  }
+  return '';
+}
+
+// Menambahkan kolom tambahan di akhir sheet jika belum ada (pola aman).
+function pastikanKolomTambahan_(sheet, daftarKolom, minimalKolom) {
+  function peta() {
+    const jumlahKolom = Math.max(sheet.getLastColumn(), minimalKolom);
+    const headers = sheet.getRange(1, 1, 1, jumlahKolom).getDisplayValues()[0];
+    const indeks = {};
+    headers.forEach(function(nama, i) {
+      if (nama) indeks[nama] = i + 1;
+    });
+    return { indeks: indeks, jumlahKolom: jumlahKolom };
+  }
+
+  daftarKolom.forEach(function(nama) {
+    const p = peta();
+    if (p.indeks[nama]) return;
+    const kolom = Math.max(sheet.getLastColumn(), minimalKolom) + 1;
+    sheet.getRange(1, kolom)
+      .setValue(nama)
+      .setFontWeight('bold')
+      .setBackground('#0f766e')
+      .setFontColor('#ffffff');
+  });
+}
+
+// ==========================================
+// SURAT TUGAS SISWA (mirror Surat Tugas untuk
+// siswa: Nama/No_Induk/Kelas). Satu baris per
+// siswa, dikelompokkan oleh Nomor_Surat.
+// ==========================================
+
+var KOLOM_TUGAS_SISWA_TAMBAHAN = [
+  'Dasar_Surat', 'Nomor_Dasar', 'Tanggal_Dasar', 'Perihal_Dasar',
+  'Hari', 'Waktu', 'Tempat'
+];
+
+function petaKolomTugasSiswa_(sheet) {
+  const jumlahKolom = Math.max(sheet.getLastColumn(), 13);
+  const headers = sheet.getRange(1, 1, 1, jumlahKolom).getDisplayValues()[0];
+  const indeks = {};
+  headers.forEach(function(nama, i) {
+    if (nama) indeks[nama] = i + 1;
+  });
+  return { indeks: indeks, jumlahKolom: jumlahKolom, headers: headers };
+}
+
+function pastikanKolomTugasSiswa_(sheet) {
+  pastikanKolomTambahan_(sheet, KOLOM_TUGAS_SISWA_TAMBAHAN, 13);
+  return petaKolomTugasSiswa_(sheet);
+}
+
+function ambilSuratTugasSiswa() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = ss.getSheetByName('Surat_Tugas_Siswa');
+
+  if (!sheet) {
+    throw new Error('Sheet Surat_Tugas_Siswa tidak ditemukan.');
+  }
+
+  const barisTerakhir = sheet.getLastRow();
+  if (barisTerakhir < 2) return [];
+
+  const peta = petaKolomTugasSiswa_(sheet);
+  const jumlahKolom = peta.jumlahKolom;
+  const data = sheet.getRange(2, 1, barisTerakhir - 1, jumlahKolom).getDisplayValues();
+
+  return data.filter(function(row) {
+    return String(row[0] || '').trim() !== '';
+  }).map(function(row) {
+    return {
+      id: row[0] || '',
+      nomorSurat: row[1] || '',
+      tanggalSurat: row[2] || '',
+      namaSiswa: row[3] || '',
+      noInduk: row[4] || '',
+      kelas: row[5] || '',
+      tujuanTugas: row[6] || '',
+      tanggalMulai: row[7] || '',
+      tanggalSelesai: row[8] || '',
+      keperluan: row[9] || '',
+      penandatangan: row[10] || '',
+      linkDokumen: row[11] || '',
+      status: row[12] || '',
+      dasarSurat: bacaKolom_(row, peta, 'Dasar_Surat', -1),
+      hari: bacaKolom_(row, peta, 'Hari', -1),
+      waktu: bacaKolom_(row, peta, 'Waktu', -1),
+      tempat: bacaKolom_(row, peta, 'Tempat', -1)
+    };
+  });
+}
+
+function ambilSuratTugasSiswaById(id) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = ss.getSheetByName('Surat_Tugas_Siswa');
+
+  if (!sheet) {
+    throw new Error('Sheet Surat_Tugas_Siswa tidak ditemukan.');
+  }
+
+  const nomorBaris = cariBarisTugasById_(sheet, id);
+  if (nomorBaris < 0) {
+    throw new Error('Surat tugas siswa tidak ditemukan.');
+  }
+
+  const peta = petaKolomTugasSiswa_(sheet);
+  const jumlahKolom = peta.jumlahKolom;
+  const barisSumber = sheet.getRange(nomorBaris, 1, 1, jumlahKolom).getDisplayValues()[0];
+  const idxNomor = peta.indeks['Nomor_Surat'];
+  const nomorSurat = String(barisSumber[idxNomor - 1] || '').trim();
+
+  function nilai(baris, nama) {
+    if (!peta.indeks[nama]) return '';
+    return String(baris[peta.indeks[nama] - 1] || '').trim();
+  }
+
+  const barisTerakhir = sheet.getLastRow();
+  const semuaBaris = barisTerakhir >= 2
+    ? sheet.getRange(2, 1, barisTerakhir - 1, jumlahKolom).getDisplayValues()
+    : [];
+
+  const siswa = [];
+  semuaBaris.forEach(function(baris) {
+    if (String(baris[0] || '').trim() === '') return;
+    if (String(baris[idxNomor - 1] || '').trim() !== nomorSurat) return;
+    siswa.push({
+      id: String(baris[0] || '').trim(),
+      namaSiswa: nilai(baris, 'Nama_Siswa'),
+      noInduk: nilai(baris, 'No_Induk'),
+      kelas: nilai(baris, 'Kelas')
+    });
+  });
+
+  return {
+    id: String(barisSumber[0] || '').trim(),
+    nomorSurat: nomorSurat,
+    nomorSuratAwal: nomorSurat,
+    tanggalSurat: nilai(barisSumber, 'Tanggal_Surat'),
+    dasarSurat: nilai(barisSumber, 'Dasar_Surat'),
+    nomorDasar: nilai(barisSumber, 'Nomor_Dasar'),
+    tanggalDasar: nilai(barisSumber, 'Tanggal_Dasar'),
+    perihalDasar: nilai(barisSumber, 'Perihal_Dasar'),
+    tujuanTugas: nilai(barisSumber, 'Tujuan_Tugas'),
+    hari: nilai(barisSumber, 'Hari'),
+    tanggalMulai: nilai(barisSumber, 'Tanggal_Mulai'),
+    tanggalSelesai: nilai(barisSumber, 'Tanggal_Selesai'),
+    waktu: nilai(barisSumber, 'Waktu'),
+    tempat: nilai(barisSumber, 'Tempat'),
+    keperluan: nilai(barisSumber, 'Keperluan'),
+    penandatangan: nilai(barisSumber, 'Penandatangan'),
+    linkDokumen: nilai(barisSumber, 'Link_Dokumen'),
+    status: nilai(barisSumber, 'Status'),
+    siswa: siswa
+  };
+}
+
+function simpanSuratTugasSiswa(form) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = ss.getSheetByName('Surat_Tugas_Siswa');
+
+  if (!sheet) {
+    throw new Error('Sheet Surat_Tugas_Siswa tidak ditemukan.');
+  }
+
+  if (!form.nomorSurat || !form.tanggalSurat) {
+    throw new Error('Nomor surat dan tanggal surat wajib diisi.');
+  }
+
+  const daftarSiswa = (form.siswa || []).filter(function(s) {
+    return String(s.namaSiswa || '').trim() !== '';
+  });
+
+  if (!daftarSiswa.length) {
+    throw new Error('Minimal satu siswa yang ditugasi wajib diisi.');
+  }
+
+  const nomorCari = String(form.nomorSuratAwal || form.nomorSurat || '').trim();
+  const lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+
+  try {
+    const peta = pastikanKolomTugasSiswa_(sheet);
+    const nomorAcuan = peta.indeks['Nomor_Surat'];
+    const barisTerakhir = sheet.getLastRow();
+    const barisUntukHapus = [];
+
+    if (barisTerakhir >= 2) {
+      const kolomNomor = sheet.getRange(2, nomorAcuan, barisTerakhir - 1, 1).getDisplayValues();
+      for (let i = 0; i < kolomNomor.length; i++) {
+        if (String(kolomNomor[i][0] || '').trim() === nomorCari) {
+          barisUntukHapus.push(i + 2);
+        }
+      }
+    }
+
+    for (let i = barisUntukHapus.length - 1; i >= 0; i--) {
+      sheet.deleteRow(barisUntukHapus[i]);
+    }
+
+    const jumlahKolom = peta.jumlahKolom;
+    const dataBaru = [];
+
+    daftarSiswa.forEach(function(s) {
+      const baris = [];
+      for (let i = 0; i < jumlahKolom; i++) baris.push('');
+
+      baris[0] = 'STS-' + Utilities.getUuid().substring(0, 8).toUpperCase();
+      baris[1] = form.nomorSurat;
+      baris[2] = form.tanggalSurat;
+      baris[3] = String(s.namaSiswa || '').trim();
+      baris[4] = String(s.noInduk || '').trim();
+      baris[5] = String(s.kelas || '').trim();
+      baris[6] = form.tujuanTugas || '';
+      baris[7] = form.tanggalMulai || '';
+      baris[8] = form.tanggalSelesai || '';
+      baris[9] = form.keperluan || '';
+      baris[10] = form.penandatangan || '';
+      baris[11] = form.linkDokumen || '';
+      baris[12] = form.status || 'Draft';
+
+      tulisKolom_(baris, peta, 'Dasar_Surat', form.dasarSurat || '');
+      tulisKolom_(baris, peta, 'Nomor_Dasar', form.nomorDasar || '');
+      tulisKolom_(baris, peta, 'Tanggal_Dasar', form.tanggalDasar || '');
+      tulisKolom_(baris, peta, 'Perihal_Dasar', form.perihalDasar || '');
+      tulisKolom_(baris, peta, 'Hari', form.hari || '');
+      tulisKolom_(baris, peta, 'Waktu', form.waktu || '');
+      tulisKolom_(baris, peta, 'Tempat', form.tempat || '');
+
+      dataBaru.push(baris);
+    });
+
+    const barisAwal = Math.max(sheet.getLastRow() + 1, 2);
+    sheet.getRange(barisAwal, 1, dataBaru.length, jumlahKolom).setValues(dataBaru);
+    SpreadsheetApp.flush();
+
+    return {
+      sukses: true,
+      pesan: 'Surat tugas siswa berhasil disimpan (' + dataBaru.length + ' siswa).',
+      id: dataBaru[0][0],
+      nomorSurat: form.nomorSurat,
+      jumlahSiswa: dataBaru.length
+    };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function hapusSuratTugasSiswa(id) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = ss.getSheetByName('Surat_Tugas_Siswa');
+
+  if (!sheet) {
+    throw new Error('Sheet Surat_Tugas_Siswa tidak ditemukan.');
+  }
+
+  const idCari = String(id || '').trim();
+  if (!idCari) {
+    throw new Error('ID surat tugas siswa wajib disertakan.');
+  }
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+
+  try {
+    const nomorBaris = cariBarisTugasById_(sheet, idCari);
+    if (nomorBaris < 0) {
+      throw new Error('Surat tugas siswa tidak ditemukan atau sudah dihapus.');
+    }
+    sheet.deleteRow(nomorBaris);
+    SpreadsheetApp.flush();
+    return { sukses: true, pesan: 'Surat tugas siswa berhasil dihapus.', id: idCari };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ==========================================
+// MESIN CRUD BARIS UMUM
+// Dipakai SPPD, SPPD Lembar 2, Nota Dinas, dan
+// Daftar Penyerahan (pegawai & siswa) agar tidak
+// menduplikasi fungsi yang mirip.
+// Setiap sheet: 1 baris = 1 record, kolom ID di A.
+// ==========================================
+
+function ambilBarisDokumen_(namaSheet, kolom) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = ss.getSheetByName(namaSheet);
+
+  if (!sheet) {
+    throw new Error('Sheet ' + namaSheet + ' tidak ditemukan.');
+  }
+
+  const barisTerakhir = sheet.getLastRow();
+  if (barisTerakhir < 2) return [];
+
+  const jumlahKolom = Math.max(sheet.getLastColumn(), kolom.length);
+  const data = sheet.getRange(2, 1, barisTerakhir - 1, jumlahKolom).getDisplayValues();
+
+  return data.reverse().filter(function(row) {
+    return String(row[0] || '').trim() !== '';
+  }).map(function(row) {
+    const obj = { id: row[0] || '' };
+    for (let i = 1; i < kolom.length; i++) {
+      obj[kolom[i]] = row[i] || '';
+    }
+    return obj;
+  });
+}
+
+function ambilBarisDokumenById_(namaSheet, kolom, id) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = ss.getSheetByName(namaSheet);
+
+  if (!sheet) {
+    throw new Error('Sheet ' + namaSheet + ' tidak ditemukan.');
+  }
+
+  const nomorBaris = cariBarisTugasById_(sheet, id);
+  if (nomorBaris < 0) {
+    throw new Error('Data pada ' + namaSheet + ' tidak ditemukan.');
+  }
+
+  const jumlahKolom = Math.max(sheet.getLastColumn(), kolom.length);
+  const row = sheet.getRange(nomorBaris, 1, 1, jumlahKolom).getDisplayValues()[0];
+
+  const obj = { id: row[0] || '' };
+  for (let i = 1; i < kolom.length; i++) {
+    obj[kolom[i]] = row[i] || '';
+  }
+  return obj;
+}
+
+function simpanBarisDokumen_(namaSheet, kolom, data, prefixId) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = ss.getSheetByName(namaSheet);
+
+  if (!sheet) {
+    throw new Error('Sheet ' + namaSheet + ' tidak ditemukan.');
+  }
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+
+  try {
+    const jumlahKolom = Math.max(sheet.getLastColumn(), kolom.length);
+    const idAda = String(data.id || '').trim();
+    let nomorBaris = -1;
+
+    if (idAda) {
+      nomorBaris = cariBarisTugasById_(sheet, idAda);
+    }
+
+    let baris;
+    if (nomorBaris > 0) {
+      baris = sheet.getRange(nomorBaris, 1, 1, jumlahKolom).getValues()[0];
+    } else {
+      baris = [];
+      for (let i = 0; i < jumlahKolom; i++) baris.push('');
+      baris[0] = prefixId + '-' + Utilities.getUuid().substring(0, 8).toUpperCase();
+    }
+
+    for (let i = 1; i < kolom.length; i++) {
+      if (data[kolom[i]] !== undefined) {
+        baris[i] = data[kolom[i]];
+      }
+    }
+
+    if (nomorBaris > 0) {
+      sheet.getRange(nomorBaris, 1, 1, jumlahKolom).setValues([baris]);
+    } else {
+      sheet.appendRow(baris);
+    }
+
+    SpreadsheetApp.flush();
+
+    return {
+      sukses: true,
+      pesan: nomorBaris > 0
+        ? 'Data ' + namaSheet + ' berhasil diperbarui.'
+        : 'Data ' + namaSheet + ' berhasil disimpan.',
+      id: baris[0]
+    };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function hapusBarisDokumen_(namaSheet, id) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = ss.getSheetByName(namaSheet);
+
+  if (!sheet) {
+    throw new Error('Sheet ' + namaSheet + ' tidak ditemukan.');
+  }
+
+  const idCari = String(id || '').trim();
+  if (!idCari) {
+    throw new Error('ID data wajib disertakan.');
+  }
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+
+  try {
+    const nomorBaris = cariBarisTugasById_(sheet, idCari);
+    if (nomorBaris < 0) {
+      throw new Error('Data pada ' + namaSheet + ' tidak ditemukan atau sudah dihapus.');
+    }
+    sheet.deleteRow(nomorBaris);
+    SpreadsheetApp.flush();
+    return { sukses: true, pesan: 'Data ' + namaSheet + ' berhasil dihapus.', id: idCari };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ---------- SPPD (Surat Perintah Perjalanan Dinas) ----------
+var KOLOM_SPPD = [
+  'ID_SPPD', 'Nomor_Surat', 'Pengguna_Anggaran', 'Nama_Pegawai', 'NIP',
+  'Pangkat_Golongan', 'Jabatan', 'Tingkat_Biaya', 'Maksud', 'Alat_Angkut',
+  'Tempat_Berangkat', 'Tempat_Tujuan', 'Lama_Perjalanan', 'Tanggal_Berangkat',
+  'Tanggal_Kembali', 'Instansi', 'Mata_Anggaran', 'Keterangan', 'Status'
+];
+function ambilSPPD() { return ambilBarisDokumen_('SPPD', KOLOM_SPPD); }
+function ambilSPPDById(id) { return ambilBarisDokumenById_('SPPD', KOLOM_SPPD, id); }
+function simpanSPPD(form) { return simpanBarisDokumen_('SPPD', KOLOM_SPPD, form, 'SPPD'); }
+function hapusSPPD(id) { return hapusBarisDokumen_('SPPD', id); }
+
+// ---------- SPPD Lembar ke 2 (catatan perjalanan) ----------
+var KOLOM_SPPD_LEMBAR2 = [
+  'ID_Lembar', 'Nomor_Surat', 'Nama_Pegawai', 'Urutan',
+  'Tiba_Di', 'Berangkat_Dari', 'Ke', 'Tanggal', 'Status'
+];
+function ambilSPPDLembar2() { return ambilBarisDokumen_('SPPD_Lembar2', KOLOM_SPPD_LEMBAR2); }
+function ambilSPPDLembar2ById(id) { return ambilBarisDokumenById_('SPPD_Lembar2', KOLOM_SPPD_LEMBAR2, id); }
+function simpanSPPDLembar2(form) { return simpanBarisDokumen_('SPPD_Lembar2', KOLOM_SPPD_LEMBAR2, form, 'SL2'); }
+function hapusSPPDLembar2(id) { return hapusBarisDokumen_('SPPD_Lembar2', id); }
+
+// ---------- Nota Dinas (laporan hasil kegiatan) ----------
+var KOLOM_NOTA = [
+  'ID_Nota', 'Nomor_Surat', 'Kepada_Yth', 'Dari', 'Perihal',
+  'Tempat_Kegiatan', 'Tanggal_Pelaksanaan', 'Dasar_Penugasan',
+  'Hasil', 'Usul', 'Status'
+];
+function ambilNotaDinas() { return ambilBarisDokumen_('Nota_Dinas', KOLOM_NOTA); }
+function ambilNotaDinasById(id) { return ambilBarisDokumenById_('Nota_Dinas', KOLOM_NOTA, id); }
+function simpanNotaDinas(form) { return simpanBarisDokumen_('Nota_Dinas', KOLOM_NOTA, form, 'ND'); }
+function hapusNotaDinas(id) { return hapusBarisDokumen_('Nota_Dinas', id); }
+
+// ---------- Daftar Penyerahan Transport (pegawai) ----------
+var KOLOM_DP = [
+  'ID_Penyerahan', 'Nomor_Surat', 'Nama_Pegawai', 'NIP', 'Golongan',
+  'Volume_Hari', 'Tarif', 'Jumlah', 'Status'
+];
+function ambilDaftarPenyerahan() { return ambilBarisDokumen_('Daftar_Penyerahan', KOLOM_DP); }
+function ambilDaftarPenyerahanById(id) { return ambilBarisDokumenById_('Daftar_Penyerahan', KOLOM_DP, id); }
+function simpanDaftarPenyerahan(form) { return simpanBarisDokumen_('Daftar_Penyerahan', KOLOM_DP, form, 'DP'); }
+function hapusDaftarPenyerahan(id) { return hapusBarisDokumen_('Daftar_Penyerahan', id); }
+
+// ---------- Daftar Penyerahan Transport Siswa ----------
+var KOLOM_DPS = [
+  'ID_Penyerahan', 'Nomor_Surat', 'Nama_Siswa', 'Kelas',
+  'Volume_Hari', 'Tarif', 'Jumlah', 'Status'
+];
+function ambilDaftarPenyerahanSiswa() { return ambilBarisDokumen_('Daftar_Penyerahan_Siswa', KOLOM_DPS); }
+function ambilDaftarPenyerahanSiswaById(id) { return ambilBarisDokumenById_('Daftar_Penyerahan_Siswa', KOLOM_DPS, id); }
+function simpanDaftarPenyerahanSiswa(form) { return simpanBarisDokumen_('Daftar_Penyerahan_Siswa', KOLOM_DPS, form, 'DPS'); }
+function hapusDaftarPenyerahanSiswa(id) { return hapusBarisDokumen_('Daftar_Penyerahan_Siswa', id); }

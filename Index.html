@@ -760,6 +760,12 @@
     <button class="menu" data-page="buatSuratKeluar">Buat Surat</button>
     <button class="menu" data-page="suratTugas">Surat Tugas</button>
     <button class="menu" data-page="agenda">Agenda Surat</button>
+    <button class="menu" data-page="dokSppd">SPPD</button>
+    <button class="menu" data-page="dokSppdLembar2">SPPD Lembar 2</button>
+    <button class="menu" data-page="dokNotaDinas">Nota Dinas</button>
+    <button class="menu" data-page="dokDaftarPenyerahan">Daftar Penyerahan</button>
+    <button class="menu" data-page="dokSuratTugasSiswa">Surat Tugas Siswa</button>
+    <button class="menu" data-page="dokDaftarPenyerahanSiswa">Penyerahan Siswa</button>
   </aside>
 
   <main>
@@ -1411,6 +1417,16 @@
       </div>
     </section>
 
+    <!-- DOKUMEN TERKAIT SURAT TUGAS (SPPD, Lembar 2, Nota Dinas,
+         Daftar Penyerahan). Form & arsip dirender dinamis oleh
+         mesin dokumenTerkait di bawah (lihat konfigurasi DOKUMEN). -->
+    <section id="dokSppd" class="page"></section>
+    <section id="dokSppdLembar2" class="page"></section>
+    <section id="dokNotaDinas" class="page"></section>
+    <section id="dokDaftarPenyerahan" class="page"></section>
+    <section id="dokSuratTugasSiswa" class="page"></section>
+    <section id="dokDaftarPenyerahanSiswa" class="page"></section>
+
     <!-- AGENDA SURAT -->
     <section id="agenda" class="page">
       <h2 class="page-title no-print">Agenda Surat</h2>
@@ -1564,6 +1580,10 @@
 
       if (button.dataset.page === 'agenda') {
         muatDataLaporan();
+      }
+
+      if (DOKUMEN_PETA[button.dataset.page]) {
+        bukaDokumenTerkait(button.dataset.page);
       }
     });
   });
@@ -3332,8 +3352,492 @@
   });
 
   // ==========================================
-  // MUAT DASHBOARD SAAT APLIKASI DIBUKA
+  // MESIN DOKUMEN TERKAIT (SPPD, Lembar 2,
+  // Nota Dinas, Daftar Penyerahan). Satu mesin
+  // generik agar tidak ada fungsi yang diduplikasi.
   // ==========================================
+
+  var DOKUMEN = {
+    dokSppd: {
+      judul: 'SPPD (Surat Perintah Perjalanan Dinas)',
+      kolomArsip: ['Nomor_Surat', 'Nama_Pegawai', 'NIP', 'Tanggal_Berangkat'],
+      judulArsip: ['Nomor Surat', 'Pegawai', 'NIP', 'Berangkat'],
+      cariPlaceholder: 'Cari nomor surat / pegawai / NIP...',
+      fields: [
+        { n: 'Nomor_Surat', l: 'Nomor Surat', t: 'text', w: true },
+        { n: 'Pengguna_Anggaran', l: 'Pengguna Anggaran / Kuasa', t: 'text' },
+        { n: 'Nama_Pegawai', l: 'Nama Pegawai', t: 'text', w: true },
+        { n: 'NIP', l: 'NIP', t: 'text' },
+        { n: 'Pangkat_Golongan', l: 'Pangkat & Golongan', t: 'text' },
+        { n: 'Jabatan', l: 'Jabatan', t: 'text' },
+        { n: 'Tingkat_Biaya', l: 'Tingkat Biaya', t: 'text' },
+        { n: 'Maksud', l: 'Maksud Perjalanan', t: 'textarea' },
+        { n: 'Alat_Angkut', l: 'Alat Angkut', t: 'text' },
+        { n: 'Tempat_Berangkat', l: 'Tempat Berangkat', t: 'text' },
+        { n: 'Tempat_Tujuan', l: 'Tempat Tujuan', t: 'text' },
+        { n: 'Lama_Perjalanan', l: 'Lama Perjalanan', t: 'text' },
+        { n: 'Tanggal_Berangkat', l: 'Tanggal Berangkat', t: 'date' },
+        { n: 'Tanggal_Kembali', l: 'Tanggal Kembali', t: 'date' },
+        { n: 'Instansi', l: 'Instansi', t: 'text' },
+        { n: 'Mata_Anggaran', l: 'Mata Anggaran', t: 'text' },
+        { n: 'Keterangan', l: 'Keterangan Lain-lain', t: 'textarea' },
+        { n: 'Status', l: 'Status', t: 'select', opsi: ['Draft', 'Siap Ditandatangani', 'Sudah Ditandatangani', 'Selesai'] }
+      ]
+    },
+
+    dokSppdLembar2: {
+      judul: 'SPPD Lembar ke 2 (Catatan Perjalanan)',
+      kolomArsip: ['Nomor_Surat', 'Nama_Pegawai', 'Urutan', 'Tanggal'],
+      judulArsip: ['Nomor Surat', 'Pegawai', 'Urutan', 'Tanggal'],
+      cariPlaceholder: 'Cari nomor surat / pegawai...',
+      fields: [
+        { n: 'Nomor_Surat', l: 'Nomor SPPD', t: 'text', w: true },
+        { n: 'Nama_Pegawai', l: 'Nama Pegawai', t: 'text', w: true },
+        { n: 'Urutan', l: 'Urutan', t: 'number' },
+        { n: 'Tiba_Di', l: 'Tiba Di', t: 'text' },
+        { n: 'Berangkat_Dari', l: 'Berangkat Dari', t: 'text' },
+        { n: 'Ke', l: 'Ke', t: 'text' },
+        { n: 'Tanggal', l: 'Tanggal', t: 'date' },
+        { n: 'Status', l: 'Status', t: 'select', opsi: ['Draft', 'Selesai'] }
+      ]
+    },
+
+    dokNotaDinas: {
+      judul: 'Nota Dinas (Laporan Hasil Kegiatan)',
+      kolomArsip: ['Nomor_Surat', 'Perihal', 'Tanggal_Pelaksanaan'],
+      judulArsip: ['Nomor Surat', 'Perihal', 'Tanggal'],
+      cariPlaceholder: 'Cari nomor surat / perihal...',
+      fields: [
+        { n: 'Nomor_Surat', l: 'Nomor Surat', t: 'text', w: true },
+        { n: 'Kepada_Yth', l: 'Kepada Yth.', t: 'text' },
+        { n: 'Dari', l: 'Dari (yang diberi tugas)', t: 'text' },
+        { n: 'Perihal', l: 'Perihal / Nama Kegiatan', t: 'text', w: true },
+        { n: 'Tempat_Kegiatan', l: 'Tempat Kegiatan', t: 'text' },
+        { n: 'Tanggal_Pelaksanaan', l: 'Tanggal Pelaksanaan', t: 'date' },
+        { n: 'Dasar_Penugasan', l: 'Dasar Penugasan', t: 'text' },
+        { n: 'Hasil', l: 'Hasil Pelaksanaan', t: 'textarea' },
+        { n: 'Usul', l: 'Usul / Masukan / Tindak Lanjut', t: 'textarea' },
+        { n: 'Status', l: 'Status', t: 'select', opsi: ['Draft', 'Siap Ditandatangani', 'Sudah Ditandatangani', 'Selesai'] }
+      ]
+    },
+
+    dokDaftarPenyerahan: {
+      judul: 'Daftar Penyerahan Transport (Pegawai)',
+      kolomArsip: ['Nomor_Surat', 'Nama_Pegawai', 'Volume_Hari', 'Jumlah'],
+      judulArsip: ['Nomor Surat', 'Pegawai', 'Volume', 'Jumlah'],
+      cariPlaceholder: 'Cari nomor surat / pegawai...',
+      fields: [
+        { n: 'Nomor_Surat', l: 'Nomor Surat', t: 'text', w: true },
+        { n: 'Nama_Pegawai', l: 'Nama Pegawai', t: 'text', w: true },
+        { n: 'NIP', l: 'NIP', t: 'text' },
+        { n: 'Golongan', l: 'Golongan', t: 'text' },
+        { n: 'Volume_Hari', l: 'Volume (hari)', t: 'number' },
+        { n: 'Tarif', l: 'Tarif per Hari', t: 'number' },
+        { n: 'Jumlah', l: 'Jumlah Diterima', t: 'number' },
+        { n: 'Status', l: 'Status', t: 'select', opsi: ['Draft', 'Selesai'] }
+      ]
+    },
+
+    dokDaftarPenyerahanSiswa: {
+      judul: 'Daftar Penyerahan Transport Siswa',
+      kolomArsip: ['Nomor_Surat', 'Nama_Siswa', 'Kelas', 'Jumlah'],
+      judulArsip: ['Nomor Surat', 'Siswa', 'Kelas', 'Jumlah'],
+      cariPlaceholder: 'Cari nomor surat / siswa / kelas...',
+      fields: [
+        { n: 'Nomor_Surat', l: 'Nomor Surat', t: 'text', w: true },
+        { n: 'Nama_Siswa', l: 'Nama Siswa', t: 'text', w: true },
+        { n: 'Kelas', l: 'Kelas', t: 'text' },
+        { n: 'Volume_Hari', l: 'Volume (hari)', t: 'number' },
+        { n: 'Tarif', l: 'Tarif per Hari', t: 'number' },
+        { n: 'Jumlah', l: 'Jumlah Diterima', t: 'number' },
+        { n: 'Status', l: 'Status', t: 'select', opsi: ['Draft', 'Selesai'] }
+      ]
+    },
+
+    dokSuratTugasSiswa: {
+      judul: 'Surat Tugas Siswa',
+      kelompok: true,
+      kolomArsip: ['nomorSurat', 'tujuanTugas', 'tanggalSurat', 'jumlah'],
+      judulArsip: ['Nomor Surat', 'Maksud Tugas', 'Tanggal', 'Jml Siswa'],
+      cariPlaceholder: 'Cari nomor surat / siswa / maksud tugas...',
+      fields: [
+        { n: 'nomorSurat', l: 'Nomor Surat *', t: 'text', w: true },
+        { n: 'tanggalSurat', l: 'Tanggal Surat *', t: 'date', w: true },
+        { n: 'dasarSurat', l: 'Dasar Surat', t: 'text' },
+        { n: 'nomorDasar', l: 'Nomor Dasar', t: 'text' },
+        { n: 'tanggalDasar', l: 'Tanggal Dasar', t: 'date' },
+        { n: 'perihalDasar', l: 'Perihal Dasar', t: 'text' },
+        { n: 'tujuanTugas', l: 'Untuk / Maksud Tugas *', t: 'text', w: true },
+        { n: 'hari', l: 'Hari', t: 'text' },
+        { n: 'waktu', l: 'Waktu', t: 'text' },
+        { n: 'tanggalMulai', l: 'Tanggal Mulai *', t: 'date', w: true },
+        { n: 'tanggalSelesai', l: 'Tanggal Selesai', t: 'date' },
+        { n: 'tempat', l: 'Tempat', t: 'text' },
+        { n: 'keperluan', l: 'Keperluan', t: 'textarea' },
+        { n: 'penandatangan', l: 'Penandatangan', t: 'text' },
+        { n: 'linkDokumen', l: 'Link Dokumen', t: 'text' },
+        { n: 'status', l: 'Status', t: 'select', opsi: ['Draft', 'Siap Ditandatangani', 'Sudah Ditandatangani', 'Selesai'] }
+      ]
+    }
+  };
+
+  // Pemetaan cepat data-page -> kunci konfigurasi.
+  var DOKUMEN_PETA = {
+    dokSppd: 'dokSppd',
+    dokSppdLembar2: 'dokSppdLembar2',
+    dokNotaDinas: 'dokNotaDinas',
+    dokDaftarPenyerahan: 'dokDaftarPenyerahan',
+    dokDaftarPenyerahanSiswa: 'dokDaftarPenyerahanSiswa',
+    dokSuratTugasSiswa: 'dokSuratTugasSiswa'
+  };
+
+  function backendDokumen(kunci) {
+    var map = {
+      dokSppd: { ambil: 'ambilSPPD', simpan: 'simpanSPPD', hapus: 'hapusSPPD', byId: 'ambilSPPDById' },
+      dokSppdLembar2: { ambil: 'ambilSPPDLembar2', simpan: 'simpanSPPDLembar2', hapus: 'hapusSPPDLembar2', byId: 'ambilSPPDLembar2ById' },
+      dokNotaDinas: { ambil: 'ambilNotaDinas', simpan: 'simpanNotaDinas', hapus: 'hapusNotaDinas', byId: 'ambilNotaDinasById' },
+      dokDaftarPenyerahan: { ambil: 'ambilDaftarPenyerahan', simpan: 'simpanDaftarPenyerahan', hapus: 'hapusDaftarPenyerahan', byId: 'ambilDaftarPenyerahanById' },
+      dokDaftarPenyerahanSiswa: { ambil: 'ambilDaftarPenyerahanSiswa', simpan: 'simpanDaftarPenyerahanSiswa', hapus: 'hapusDaftarPenyerahanSiswa', byId: 'ambilDaftarPenyerahanSiswaById' },
+      dokSuratTugasSiswa: { ambil: 'ambilSuratTugasSiswa', simpan: 'simpanSuratTugasSiswa', hapus: 'hapusSuratTugasSiswa', byId: 'ambilSuratTugasSiswaById' }
+    };
+    return map[kunci];
+  }
+
+  // Render struktur HTML sebuah halaman dokumen (dipanggil sekali per dokumen).
+  function renderKerangkaDokumen(idHalaman, cfg) {
+    var section = document.getElementById(idHalaman);
+    if (section.getAttribute('data-siap') === '1') return;
+    section.setAttribute('data-siap', '1');
+
+    var html = '';
+    html += '<h2 class="page-title no-print">' + cfg.judul + '</h2>';
+    html += '<div class="card no-print"><h3>Formulir</h3>';
+    html += '<form id="form_' + idHalaman + '" data-kunci="' + idHalaman + '">';
+    html += '<input type="hidden" name="id" value="">';
+    html += '<div class="form-grid">';
+    cfg.fields.forEach(function(f) {
+      var kelas = f.w ? 'field full' : 'field';
+      html += '<div class="' + kelas + '"><label>' + f.l + '</label>';
+      if (f.t === 'textarea') {
+        html += '<textarea name="' + f.n + '" rows="3"></textarea>';
+      } else if (f.t === 'select') {
+        html += '<select name="' + f.n + '">';
+        f.opsi.forEach(function(o) { html += '<option>' + o + '</option>'; });
+        html += '</select>';
+      } else if (f.t === 'date') {
+        html += '<input type="date" name="' + f.n + '">';
+      } else if (f.t === 'number') {
+        html += '<input type="number" name="' + f.n + '">';
+      } else {
+        html += '<input type="text" name="' + f.n + '">';
+      }
+      html += '</div>';
+    });
+    html += '</div>';
+
+    if (cfg.kelompok) {
+      html += '<h3 style="margin-top:16px;">Siswa yang Ditugaskan</h3>';
+      html += '<div id="daftarSiswa_' + idHalaman + '"></div>';
+      html += '<button type="button" class="btn small" data-tambah-siswa="' + idHalaman + '" style="margin-top:8px;">+ Tambah Siswa</button>';
+    }
+
+    html += '<div class="actions">';
+    html += '<button type="button" class="btn" data-simpan="' + idHalaman + '">Simpan</button>';
+    html += '<button type="button" class="btn secondary" data-reset="' + idHalaman + '">Bersihkan</button>';
+    html += '</div>';
+    html += '<div class="message" id="pesan_' + idHalaman + '"></div>';
+    html += '</form></div>';
+
+    html += '<div class="card no-print"><h3>Arsip</h3>';
+    html += '<div class="search-box"><input data-cari="' + idHalaman + '" placeholder="' + cfg.cariPlaceholder + '"></div>';
+    html += '<div class="table-wrap"><table><thead><tr><th>No.</th>';
+    cfg.judulArsip.forEach(function(j) { html += '<th>' + j + '</th>'; });
+    html += '<th>Aksi</th></tr></thead>';
+    html += '<tbody id="tabel_' + idHalaman + '"><tr><td colspan="' + (cfg.judulArsip.length + 2) + '" class="empty">Memuat data...</td></tr></tbody>';
+    html += '</table></div></div>';
+
+    section.innerHTML = html;
+
+    var section2 = document.getElementById(idHalaman);
+    section2.querySelector('[data-simpan]').addEventListener('click', function() {
+      simpanDokumenTerkait(idHalaman);
+    });
+    section2.querySelector('[data-reset]').addEventListener('click', function() {
+      bersihkanFormDokumen(idHalaman);
+    });
+    section2.querySelector('[data-cari]').addEventListener('input', function() {
+      filterArsipDokumen(idHalaman);
+    });
+    if (cfg.kelompok) {
+      section2.querySelector('[data-tambah-siswa]').addEventListener('click', function() {
+        tambahBarisSiswaDokumen(idHalaman);
+      });
+    }
+  }
+
+  // Data arsip lengkap per dokumen (untuk filter).
+  var arsipDokumen = {};
+
+  function bukaDokumenTerkait(idHalaman) {
+    var cfg = DOKUMEN[idHalaman];
+    if (!cfg) return;
+    renderKerangkaDokumen(idHalaman, cfg);
+    muatArsipDokumen(idHalaman);
+  }
+
+  function muatArsipDokumen(idHalaman) {
+    var cfg = DOKUMEN[idHalaman];
+    var be = backendDokumen(idHalaman);
+    var tbody = document.getElementById('tabel_' + idHalaman);
+    tbody.innerHTML = '<tr><td colspan="' + (cfg.judulArsip.length + 2) + '" class="empty">Memuat data...</td></tr>';
+
+    google.script.run
+      .withSuccessHandler(function(data) {
+        var arr = data || [];
+        if (cfg.kelompok) {
+          arsipDokumen[idHalaman] = kelompokkanArsipSiswa_(arr);
+        } else {
+          arsipDokumen[idHalaman] = arr;
+        }
+        tampilkanArsipDokumen(idHalaman, arsipDokumen[idHalaman]);
+      })
+      .withFailureHandler(function(error) {
+        tbody.innerHTML = '<tr><td colspan="' + (cfg.judulArsip.length + 2) + '" class="empty">Gagal memuat: ' + error.message + '</td></tr>';
+      })
+      [be.ambil]();
+  }
+
+  function kelompokkanArsipSiswa_(data) {
+    var urutan = [];
+    var peta = {};
+    data.forEach(function(s) {
+      var nomor = String(s.nomorSurat || '').trim();
+      if (!peta[nomor]) {
+        peta[nomor] = { id: s.id, nomorSurat: nomor, tujuanTugas: s.tujuanTugas, tanggalSurat: s.tanggalSurat, jumlah: 0 };
+        urutan.push(peta[nomor]);
+      }
+      peta[nomor].jumlah += 1;
+    });
+    return urutan;
+  }
+
+  function tampilkanArsipDokumen(idHalaman, data) {
+    var cfg = DOKUMEN[idHalaman];
+    var tbody = document.getElementById('tabel_' + idHalaman);
+    tbody.innerHTML = '';
+
+    if (!data.length) {
+      var tr = document.createElement('tr');
+      var td = document.createElement('td');
+      td.colSpan = cfg.judulArsip.length + 2;
+      td.className = 'empty';
+      td.textContent = 'Belum ada data.';
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+      return;
+    }
+
+    data.forEach(function(item, index) {
+      var tr = document.createElement('tr');
+      tr.appendChild(buatSel(index + 1));
+      cfg.kolomArsip.forEach(function(kol) {
+        var nilai = item[kol];
+        if (kol === 'jumlah') nilai = (item.jumlah || 0) + ' siswa';
+        tr.appendChild(buatSel(nilai));
+      });
+
+      var tdAksi = document.createElement('td');
+      tdAksi.style.whiteSpace = 'nowrap';
+
+      var btnEdit = document.createElement('button');
+      btnEdit.type = 'button';
+      btnEdit.className = 'btn small';
+      btnEdit.textContent = 'Edit';
+      btnEdit.style.marginRight = '5px';
+      btnEdit.addEventListener('click', function() { bukaEditDokumen(idHalaman, item.id); });
+      tdAksi.appendChild(btnEdit);
+
+      var btnHapus = document.createElement('button');
+      btnHapus.type = 'button';
+      btnHapus.className = 'btn small';
+      btnHapus.style.background = '#dc2626';
+      btnHapus.style.color = '#ffffff';
+      btnHapus.textContent = 'Hapus';
+      btnHapus.addEventListener('click', function() { konfirmasiHapusDokumen(idHalaman, item.id); });
+      tdAksi.appendChild(btnHapus);
+
+      tr.appendChild(tdAksi);
+      tbody.appendChild(tr);
+    });
+  }
+
+  function filterArsipDokumen(idHalaman) {
+    var kata = String(document.querySelector('[data-cari="' + idHalaman + '"]').value || '').trim().toLowerCase();
+    var data = arsipDokumen[idHalaman] || [];
+    if (!kata) { tampilkanArsipDokumen(idHalaman, data); return; }
+    var hasil = data.filter(function(item) {
+      return Object.keys(item).some(function(k) {
+        return String(item[k] || '').toLowerCase().indexOf(kata) !== -1;
+      });
+    });
+    tampilkanArsipDokumen(idHalaman, hasil);
+  }
+
+  // Mengumpulkan nilai form sebuah dokumen menjadi objek.
+  function dataFormDokumen(idHalaman) {
+    var form = document.getElementById('form_' + idHalaman);
+    var data = ambilDataForm(form);
+    if (DOKUMEN[idHalaman].kelompok) {
+      data.siswa = ambilDaftarSiswaDokumen(idHalaman);
+    }
+    return data;
+  }
+
+  function bersihkanFormDokumen(idHalaman) {
+    document.getElementById('form_' + idHalaman).reset();
+    document.getElementById('pesan_' + idHalaman).textContent = '';
+    if (DOKUMEN[idHalaman].kelompok) {
+      document.getElementById('daftarSiswa_' + idHalaman).innerHTML = '';
+      tambahBarisSiswaDokumen(idHalaman);
+    }
+  }
+
+  function simpanDokumenTerkait(idHalaman) {
+    var cfg = DOKUMEN[idHalaman];
+    var be = backendDokumen(idHalaman);
+    var data = dataFormDokumen(idHalaman);
+    var pesan = document.getElementById('pesan_' + idHalaman);
+
+    if (!confirm('Simpan data ' + cfg.judul + ' ini?')) return;
+
+    tampilkanPesan(pesan, 'Menyimpan...', '');
+
+    google.script.run
+      .withSuccessHandler(function(hasil) {
+        tampilkanPesan(pesan, hasil.pesan, 'success');
+        bersihkanFormDokumen(idHalaman);
+        muatArsipDokumen(idHalaman);
+      })
+      .withFailureHandler(function(error) {
+        tampilkanPesan(pesan, 'Gagal menyimpan: ' + error.message, 'error');
+      })
+      [be.simpan](data);
+  }
+
+  function bukaEditDokumen(idHalaman, id) {
+    var cfg = DOKUMEN[idHalaman];
+    var be = backendDokumen(idHalaman);
+    var pesan = document.getElementById('pesan_' + idHalaman);
+    tampilkanPesan(pesan, 'Memuat data...', '');
+
+    google.script.run
+      .withSuccessHandler(function(data) {
+        isiFormDokumen(idHalaman, data);
+        tampilkanPesan(pesan, 'Data dimuat untuk diedit.', 'success');
+      })
+      .withFailureHandler(function(error) {
+        tampilkanPesan(pesan, 'Gagal memuat: ' + error.message, 'error');
+      })
+      [be.byId](id);
+  }
+
+  function isiFormDokumen(idHalaman, data) {
+    var cfg = DOKUMEN[idHalaman];
+    var form = document.getElementById('form_' + idHalaman);
+    form.reset();
+    form.id.value = data.id || '';
+
+    cfg.fields.forEach(function(f) {
+      var el = form[f.n];
+      if (!el) return;
+      var nilai = data[f.n] || '';
+      if (f.t === 'date') nilai = uraiTanggalKeISO(nilai);
+      el.value = nilai;
+    });
+
+    if (cfg.kelompok) {
+      var wadah = document.getElementById('daftarSiswa_' + idHalaman);
+      wadah.innerHTML = '';
+      var daftar = (data.siswa && data.siswa.length)
+        ? data.siswa
+        : [{ namaSiswa: '', noInduk: '', kelas: '' }];
+      daftar.forEach(function(s) { tambahBarisSiswaDokumen(idHalaman, s); });
+    }
+  }
+
+  function konfirmasiHapusDokumen(idHalaman, id) {
+    var cfg = DOKUMEN[idHalaman];
+    var be = backendDokumen(idHalaman);
+    if (!confirm('Hapus data ' + cfg.judul + ' ini?\n\nTindakan ini tidak dapat dibatalkan.')) return;
+
+    var pesan = document.getElementById('pesan_' + idHalaman);
+    tampilkanPesan(pesan, 'Menghapus...', '');
+
+    google.script.run
+      .withSuccessHandler(function(hasil) {
+        tampilkanPesan(pesan, hasil.pesan, 'success');
+        muatArsipDokumen(idHalaman);
+      })
+      .withFailureHandler(function(error) {
+        tampilkanPesan(pesan, 'Gagal menghapus: ' + error.message, 'error');
+      })
+      [be.hapus](id);
+  }
+
+  // ---------- Baris siswa dinamis (Surat Tugas Siswa) ----------
+  function tambahBarisSiswaDokumen(idHalaman, data) {
+    var wadah = document.getElementById('daftarSiswa_' + idHalaman);
+    var baris = document.createElement('div');
+    baris.className = 'pegawai-tugas-baris';
+
+    var inputNama = document.createElement('input');
+    inputNama.type = 'text';
+    inputNama.placeholder = 'Nama siswa';
+    inputNama.className = 'ds-nama';
+    inputNama.value = (data && data.namaSiswa) || '';
+
+    var inputInduk = document.createElement('input');
+    inputInduk.type = 'text';
+    inputInduk.placeholder = 'No. Induk';
+    inputInduk.className = 'ds-induk';
+    inputInduk.value = (data && data.noInduk) || '';
+
+    var inputKelas = document.createElement('input');
+    inputKelas.type = 'text';
+    inputKelas.placeholder = 'Kelas';
+    inputKelas.className = 'ds-kelas';
+    inputKelas.value = (data && data.kelas) || '';
+
+    var btnHapus = document.createElement('button');
+    btnHapus.type = 'button';
+    btnHapus.className = 'btn small';
+    btnHapus.style.background = '#dc2626';
+    btnHapus.style.color = '#ffffff';
+    btnHapus.textContent = 'Hapus';
+    btnHapus.addEventListener('click', function() { wadah.removeChild(baris); });
+
+    baris.appendChild(inputNama);
+    baris.appendChild(inputInduk);
+    baris.appendChild(inputKelas);
+    baris.appendChild(btnHapus);
+    wadah.appendChild(baris);
+    inputNama.focus();
+  }
+
+  function ambilDaftarSiswaDokumen(idHalaman) {
+    var barisEls = document.querySelectorAll('#daftarSiswa_' + idHalaman + ' .pegawai-tugas-baris');
+    var hasil = [];
+    barisEls.forEach(function(baris) {
+      var nama = baris.querySelector('.ds-nama').value.trim();
+      if (!nama) return;
+      hasil.push({
+        namaSiswa: nama,
+        noInduk: baris.querySelector('.ds-induk').value.trim(),
+        kelas: baris.querySelector('.ds-kelas').value.trim()
+      });
+    });
+    return hasil;
+  }
 
   muatDashboard();
 </script>
