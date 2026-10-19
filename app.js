@@ -328,22 +328,29 @@ function loadState() {
   }
 }
 
-function saveState() {
+async function saveState() {
   renderAll();
+  let localSaved = false;
   if (activeTransport && typeof activeTransport.saveStorage === 'function') {
     // Mirror the complete state locally so fields not represented by remote
     // tables (official history and numbering counters) survive refreshes.
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (error) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); localSaved = true; } catch (error) {
       showToast(`Penyimpanan lokal penuh/tidak dapat ditulis: ${error.message}`);
     }
-    activeTransport.saveStorage(state).catch((error) => {
+    try {
+      await activeTransport.saveStorage(state);
+      return 'spreadsheet';
+    } catch (error) {
       showToast(`Penyimpanan spreadsheet gagal: ${error.message}`);
-    });
+      return localSaved ? 'local' : 'failed';
+    }
   } else {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      return 'local';
     } catch (error) {
       showToast(`Penyimpanan lokal penuh/tidak dapat ditulis: ${error.message}`);
+      return 'failed';
     }
   }
 }
@@ -2378,8 +2385,8 @@ async function buildPrintDocument(taskId, type, sppdPersonId = '') {
 }
 
 function printArchive(kind = 'task') {
-  const cityLogoSrc = new URL('assets/logo-kota.jpeg', window.location.href).href;
-  const schoolLogoSrc = new URL('assets/logo-smpn13.png', window.location.href).href;
+  const cityLogoSrc = window.GAS_ASSETS?.cityLogo || new URL('/assets/logo-kota.jpeg', window.location.href).href;
+  const schoolLogoSrc = window.GAS_ASSETS?.schoolLogo || new URL('/assets/logo-smpn13.png', window.location.href).href;
   const tables = [
     ['ARSIP SURAT MASUK', ['No','Tanggal Terima','Nomor Surat','Tanggal Surat','Pengirim','Perihal','Disposisi'], [...state.incoming].sort((a,b)=>(a.receivedDate||'').localeCompare(b.receivedDate||'')).map((r,i)=>[i+1,formatDate(r.receivedDate),r.letterNumber,r.letterDate?formatDate(r.letterDate):'',r.sender,r.subject,r.disposition])],
     ['ARSIP SURAT KELUAR', ['No','Tanggal Keluar','Nomor Surat','Jenis','Tujuan','Perihal','Keterangan'], [...state.outgoing].sort((a,b)=>(a.issuedDate||'').localeCompare(b.issuedDate||'')).map((r,i)=>[i+1,formatDate(r.issuedDate),r.number,r.letterType,r.recipient,r.subject,r.notes])],
@@ -2628,7 +2635,7 @@ document.getElementById('record-form').addEventListener('submit', (event) => {
   if (event.currentTarget.dataset.kind === 'outgoing') saveOutgoing(event.currentTarget);
 });
 
-document.getElementById('officials-form').addEventListener('submit', (event) => {
+document.getElementById('officials-form').addEventListener('submit', async (event) => {
   event.preventDefault();
   const values = collectFormData(event.currentTarget);
   saveOfficialHistory('principal', values.principalName.trim(), values.principalNip.trim(), values.principalStartDate);
@@ -2641,15 +2648,17 @@ document.getElementById('officials-form').addEventListener('submit', (event) => 
     treasurerNip: values.treasurerNip.trim(),
     treasurerStartDate: values.treasurerStartDate,
   };
-  saveState();
-  showToast('Pejabat penandatangan berhasil disimpan.');
+  const savedTo = await saveState();
+  showToast(savedTo === 'spreadsheet' ? 'Pejabat berhasil disimpan ke Spreadsheet.' : savedTo === 'local' ? 'Pejabat tersimpan di browser ini. Hubungkan Spreadsheet agar data tersedia setelah pindah perangkat.' : 'Pejabat gagal disimpan.');
 });
 
-document.getElementById('official-master-form').addEventListener('submit', (event) => {
+document.getElementById('official-master-form').addEventListener('submit', async (event) => {
   event.preventDefault();
   const values = collectFormData(event.currentTarget);
   state.officialsMaster.push({ id: crypto.randomUUID(), name: values.name.trim(), role: values.role.trim(), nip: values.nip.trim() });
-  event.currentTarget.reset(); saveState(); showToast('Petugas berhasil ditambahkan ke master data.');
+  event.currentTarget.reset();
+  const savedTo = await saveState();
+  showToast(savedTo === 'spreadsheet' ? 'Petugas berhasil disimpan ke Spreadsheet.' : savedTo === 'local' ? 'Petugas tersimpan di browser ini. Hubungkan Spreadsheet agar dapat digunakan dari perangkat lain.' : 'Petugas gagal disimpan.');
 });
 
 document.addEventListener('change', (event) => {
