@@ -22,6 +22,7 @@ const defaultState = {
   outgoing: [],
   teachers: [],
   students: [],
+  officialsMaster: [],
   officials: {
     principalName: '',
     principalNip: '',
@@ -96,7 +97,7 @@ const STORAGE_TABLES = {
   outgoing: { label: 'Outgoing', fields: ['issuedDate', 'number', 'letterType', 'recipient', 'subject', 'notes', 'attachment', 'createdAt', 'updatedAt'] },
   teachers: { label: 'Masters', kind: 'teacher', fields: ['name', 'grade', 'rank', 'position', 'nip', 'nuptk', 'createdAt'] },
   students: { label: 'Masters', kind: 'student', fields: ['name', 'class', 'nis', 'createdAt'] },
-  settings: { label: 'Settings', fields: ['officials', 'officialHistory', 'updatedAt'] },
+  settings: { label: 'Settings', fields: ['officials', 'officialHistory', 'officialsMaster', 'updatedAt'] },
 };
 
 /**
@@ -115,6 +116,7 @@ async function initStorage() {
     const merged = syncFromRemote(remote);
     // Number counters remain local; signing officials are loaded from Settings.
     if (saved?.lastIssuedByYear) merged.lastIssuedByYear = { ...merged.lastIssuedByYear, ...saved.lastIssuedByYear };
+    if (!merged.officialsMaster.length && saved?.officialsMaster?.length) merged.officialsMaster = saved.officialsMaster;
     return merged;
   }
   return saved;
@@ -129,6 +131,8 @@ function syncFromRemote(payload) {
     next.teachers = Array.isArray(payload.teachers) ? payload.teachers : [];
     next.students = Array.isArray(payload.students) ? payload.students : [];
     if (payload.officials && typeof payload.officials === 'object') next.officials = { ...defaultState.officials, ...payload.officials };
+    if (Array.isArray(payload.officialsMaster)) next.officialsMaster = payload.officialsMaster;
+    else if (payload.officialsMaster && typeof payload.officialsMaster === 'string') { try { next.officialsMaster = JSON.parse(payload.officialsMaster); } catch (_) {} }
     if (payload.officialHistory && typeof payload.officialHistory === 'object') {
       next.officialHistory = {
         principal: Array.isArray(payload.officialHistory.principal) ? payload.officialHistory.principal : next.officialHistory.principal,
@@ -311,6 +315,7 @@ function loadState() {
       outgoing: Array.isArray(stored.outgoing) ? stored.outgoing : [],
       teachers: Array.isArray(stored.teachers) ? stored.teachers : [],
       students: Array.isArray(stored.students) ? stored.students : [],
+      officialsMaster: Array.isArray(stored.officialsMaster) ? stored.officialsMaster : [],
       officials: { ...defaultState.officials, ...(stored.officials || {}) },
       officialHistory: {
         principal: Array.isArray(stored.officialHistory?.principal) ? stored.officialHistory.principal : [{ name: stored.officials?.principalName || defaultState.officials.principalName, nip: stored.officials?.principalNip || defaultState.officials.principalNip, startDate: stored.officials?.principalStartDate || '1900-01-01' }],
@@ -358,6 +363,7 @@ const localStore = {
         outgoing: Array.isArray(stored.outgoing) ? stored.outgoing : [],
         teachers: Array.isArray(stored.teachers) ? stored.teachers : [],
         students: Array.isArray(stored.students) ? stored.students : [],
+        officialsMaster: Array.isArray(stored.officialsMaster) ? stored.officialsMaster : [],
         officials: stored.officials || null,
         officialHistory: stored.officialHistory || null,
         lastIssuedByYear: stored.lastIssuedByYear || null,
@@ -377,7 +383,7 @@ async function readAllFromSheet() {
   if (!API_BASE_URL) return null;
   const data = await fetchConfig();
   if (!data || !Array.isArray(data.tables)) return null;
-  const rows = { tasks: [], incoming: [], outgoing: [], teachers: [], students: [], officials: null, officialHistory: null };
+  const rows = { tasks: [], incoming: [], outgoing: [], teachers: [], students: [], officials: null, officialHistory: null, officialsMaster: [] };
   for (const table of data.tables) {
     const list = await fetchJson(apiUrl(table.name, true), { headers: { Accept: 'application/json' }, method: 'GET' });
     if (!Array.isArray(list)) throw new Error(list?.error || `Respons tabel ${table.name} tidak valid.`);
@@ -393,6 +399,7 @@ async function readAllFromSheet() {
       if (settings) {
         rows.officials = parseJsonObject(settings.officials);
         rows.officialHistory = parseJsonObject(settings.officialHistory);
+        rows.officialsMaster = parseJsonArray(settings.officialsMaster);
       }
     }
   }
@@ -469,6 +476,7 @@ async function writeAllToSheet(rowsByTable) {
       ...(Array.isArray(row.students) ? { students: JSON.stringify(row.students) } : {}),
       ...(row.officials && typeof row.officials === 'object' ? { officials: JSON.stringify(row.officials) } : {}),
       ...(row.officialHistory && typeof row.officialHistory === 'object' ? { officialHistory: JSON.stringify(row.officialHistory) } : {}),
+      ...(Array.isArray(row.officialsMaster) ? { officialsMaster: JSON.stringify(row.officialsMaster) } : {}),
     })))));
   return { ok: true, written: results.length };
 }
@@ -493,7 +501,16 @@ async function spreadsheetTransportInit() {
       return data || null;
     },
     async saveStorage(next) {
-      await writeAllToSheet(next);
+      await writeAllToSheet({
+        ...next,
+        settings: [{
+          id: 'application',
+          officials: next.officials || {},
+          officialHistory: next.officialHistory || {},
+          officialsMaster: next.officialsMaster || [],
+          updatedAt: new Date().toISOString(),
+        }],
+      });
     },
     async readTable(table) {
       const data = await readAllFromSheet();
@@ -515,7 +532,7 @@ async function spreadsheetTransportInit() {
       const outgoing = (exported.outgoing || []).map((t) => ({ id: String(t.id || crypto.randomUUID()), ...t }));
       const teachers = (exported.teachers || []).map((t) => ({ id: String(t.id || crypto.randomUUID()), ...t }));
       const students = (exported.students || []).map((t) => ({ id: String(t.id || crypto.randomUUID()), ...t }));
-      const settings = [{ id: 'application', officials: exported.officials || {}, officialHistory: exported.officialHistory || {}, updatedAt: new Date().toISOString() }];
+      const settings = [{ id: 'application', officials: exported.officials || {}, officialHistory: exported.officialHistory || {}, officialsMaster: exported.officialsMaster || [], updatedAt: new Date().toISOString() }];
       return { tasks, incoming, outgoing, teachers, students, settings };
     },
   };
@@ -536,6 +553,7 @@ async function connectStorageToSpreadsheet() {
     reconnectStorage(transport);
     const localOfficialsForConnect = state.officials;
     const localHistoryForConnect = state.officialHistory;
+    const localOfficialsMasterForConnect = state.officialsMaster;
     const localIssuedNumbers = state.lastIssuedByYear;
     state = syncFromRemote(remote);
     state.lastIssuedByYear = localIssuedNumbers;
@@ -543,7 +561,10 @@ async function connectStorageToSpreadsheet() {
     if (!remote.officials) {
       state.officials = localOfficialsForConnect;
       state.officialHistory = localHistoryForConnect;
-      await writeAllToSheet({ settings: [{ id: 'application', officials: state.officials, officialHistory: state.officialHistory, updatedAt: new Date().toISOString() }] });
+    }
+    if (!state.officialsMaster.length && localOfficialsMasterForConnect?.length) state.officialsMaster = localOfficialsMasterForConnect;
+    if (!remote.officials || !(remote.officialsMaster || []).length) {
+      await writeAllToSheet({ settings: [{ id: 'application', officials: state.officials, officialHistory: state.officialHistory, officialsMaster: state.officialsMaster || [], updatedAt: new Date().toISOString() }] });
     }
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (error) {
       showToast(`Salinan pengaturan lokal tidak dapat ditulis: ${error.message}`);
@@ -726,6 +747,9 @@ function renderAgenda() {
     button.classList.toggle('is-selected', selected);
     button.setAttribute('aria-selected', String(selected));
   });
+  document.getElementById('print-incoming-button').hidden = !isIncoming;
+  document.getElementById('print-outgoing-button').hidden = isIncoming;
+  document.getElementById('print-task-button').hidden = isIncoming;
   const addButton = document.getElementById('agenda-add-button');
   addButton.dataset.action = isIncoming ? 'new-incoming' : 'new-outgoing';
   addButton.innerHTML = `<span class="button-plus">+</span> ${isIncoming ? 'Catat surat masuk' : 'Catat surat keluar'}`;
@@ -740,11 +764,11 @@ function renderAgenda() {
   const filtered = rows.filter((entry) => [entry.letterNumber, entry.subject, entry.sender, entry.recipient, entry.disposition, entry.number, entry.letterType].join(' ').toLowerCase().includes(query))
     .sort((first, second) => ((isIncoming ? second.receivedDate : second.issuedDate) || '').localeCompare((isIncoming ? first.receivedDate : first.issuedDate) || ''));
   const head = isIncoming
-    ? '<tr><th>Tanggal terima</th><th>Nomor surat</th><th>Tanggal surat</th><th>Pengirim</th><th>Perihal</th><th>Disposisi</th></tr>'
+    ? '<tr><th>Tanggal terima</th><th>Nomor surat</th><th>Tanggal surat</th><th>Pengirim</th><th>Perihal</th><th>Disposisi</th><th>Berkas</th></tr>'
     : '<tr><th>Tanggal keluar</th><th>Nomor surat</th><th>Jenis surat</th><th>Tujuan</th><th>Perihal</th><th class="action-column">Aksi</th></tr>';
   document.getElementById('agenda-head').innerHTML = head;
   document.getElementById('agenda-rows').innerHTML = filtered.map((entry) => isIncoming
-    ? `<tr><td>${escapeHtml(formatDate(entry.receivedDate))}</td><td>${escapeHtml(entry.letterNumber || '—')}</td><td>${escapeHtml(formatDate(entry.letterDate))}</td><td>${escapeHtml(entry.sender || '—')}</td><td>${escapeHtml(entry.subject || '—')}</td><td>${escapeHtml(entry.disposition || '—')}</td></tr>`
+    ? `<tr><td>${escapeHtml(formatDate(entry.receivedDate))}</td><td>${escapeHtml(entry.letterNumber || '—')}</td><td>${escapeHtml(formatDate(entry.letterDate))}</td><td>${escapeHtml(entry.sender || '—')}</td><td>${escapeHtml(entry.subject || '—')}</td><td>${escapeHtml(entry.disposition || '—')}</td><td>${entry.attachment?.startsWith('{') ? `<button class="icon-button" data-action="open-incoming-file" data-id="${escapeHtml(entry.id)}" title="Buka berkas">↗</button>` : '—'}</td></tr>`
     : `<tr><td>${escapeHtml(formatDate(entry.issuedDate))}</td><td>${escapeHtml(entry.number || '—')}</td><td>${escapeHtml(entry.activity || entry.letterType || 'Surat Tugas')}</td><td>${escapeHtml(entry.recipient || '—')}</td><td>${escapeHtml(entry.subject || '—')}</td><td class="action-cell">${entry.recordType === 'task' ? `<button class="icon-button" data-action="print-options" data-id="${escapeHtml(entry.id)}" aria-label="Pilih dokumen cetak" title="Pilih dokumen cetak">▤</button>` : `<button class="icon-button" data-action="edit-outgoing" data-id="${escapeHtml(entry.id)}" aria-label="Edit surat keluar" title="Edit surat keluar">✎</button>`}</td></tr>`).join('');
   document.getElementById('agenda-empty').classList.toggle('is-visible', filtered.length === 0);
   document.querySelector('#page-agenda .data-table').style.display = filtered.length ? '' : 'none';
@@ -762,6 +786,7 @@ function renderSettings() {
   document.getElementById('treasurer-history').innerHTML = state.officialHistory.treasurer.map((official) => `<tr><td>${escapeHtml(validityLabel(official.startDate))}</td><td>${escapeHtml(official.name)}</td><td>${escapeHtml(official.nip)}</td></tr>`).join('');
   document.getElementById('teacher-master-count').textContent = `${state.teachers.length} guru`;
   document.getElementById('student-master-count').textContent = `${state.students.length} siswa`;
+  document.getElementById('officials-master-list').innerHTML = state.officialsMaster.map((p, i) => `<tr><td>${escapeHtml(p.name)}</td><td>${escapeHtml(p.role)}</td><td>${escapeHtml(p.nip || '')}</td><td><button type="button" class="icon-button" data-action="delete-official" data-id="${i}" aria-label="Hapus petugas">×</button></td></tr>`).join('');
   document.getElementById('storage-record-count').textContent = `${state.tasks.length + state.incoming.length + state.outgoing.length} catatan tersimpan`;
 }
 
@@ -989,6 +1014,7 @@ function openIncomingForm() {
     ${fieldMarkup('Perihal', 'subject', { placeholder: 'Ringkasan perihal surat', required: true, full: true })}
     ${fieldMarkup('Disposisi / tindak lanjut', 'disposition', { type: 'textarea', placeholder: 'Arahan atau tindak lanjut', full: true })}
     ${fieldMarkup('Lampiran', 'attachment', { placeholder: 'Contoh: 2 berkas' })}
+    <label class="field field-full"><span>Unggah berkas surat</span><input name="incomingFile" type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"><small>PDF, gambar, atau dokumen Word (maksimal 30 KB)</small></label>
   </div>`;
   dialog.showModal();
 }
@@ -1023,11 +1049,15 @@ function saveTask(form) {
 }
 
 function saveIncoming(form) {
-  const entry = { ...collectFormData(form), id: crypto.randomUUID(), createdAt: new Date().toISOString() };
-  state.incoming.push(entry);
-  saveState();
-  document.getElementById('record-dialog').close();
-  showToast('Surat masuk tersimpan di agenda.');
+  const file = form.elements.incomingFile.files[0];
+  if (file && file.size > 30 * 1024) { showToast('Ukuran berkas maksimal 30 KB agar dapat disimpan dengan aman di Spreadsheet.'); return; }
+  const values = collectFormData(form); delete values.incomingFile;
+  const commit = (attachment) => {
+    const entry = { ...values, attachment: attachment || '', id: crypto.randomUUID(), createdAt: new Date().toISOString() };
+    state.incoming.push(entry); saveState(); document.getElementById('record-dialog').close(); showToast('Surat masuk tersimpan di agenda.');
+  };
+  if (!file) return commit('');
+  const reader = new FileReader(); reader.onload = () => commit(JSON.stringify({ name: file.name, type: file.type, data: reader.result })); reader.onerror = () => showToast('Berkas gagal dibaca.'); reader.readAsDataURL(file);
 }
 
 function openOutgoingForm(outgoingId = '') {
@@ -2347,14 +2377,25 @@ async function buildPrintDocument(taskId, type, sppdPersonId = '') {
   printWindow.document.close();
 }
 
-function printArchive() {
-  const archiveRows = [...state.tasks].sort((first, second) => (first.issuedDate || '').localeCompare(second.issuedDate || '')).map((task, index) => `<tr><td>${index + 1}</td><td>${escapeHtml(task.number)}</td><td>${escapeHtml(task.basis || '')}</td><td>${escapeHtml(task.basisNumber || '')}</td><td>${escapeHtml(formatDate(task.basisDate))}</td><td>${escapeHtml(task.subject || '')}</td><td>${escapeHtml(assigneeNames(task.assignees))}</td><td>${escapeHtml(task.eventName || '')}</td><td>${escapeHtml(task.eventDay || '')}</td><td>${escapeHtml(formatDate(task.eventStartDate || task.eventDate))}${task.eventEndDate && task.eventEndDate !== task.eventStartDate ? ` s.d. ${escapeHtml(formatDate(task.eventEndDate))}` : ''}</td><td>${escapeHtml(task.eventTime || '')}</td><td>${escapeHtml(task.place || '')}</td><td>${escapeHtml(task.attachment || '')}</td></tr>`).join('');
+function printArchive(kind = 'task') {
+  const cityLogoSrc = new URL('assets/logo-kota.jpeg', window.location.href).href;
+  const schoolLogoSrc = new URL('assets/logo-smpn13.png', window.location.href).href;
+  const tables = [
+    ['ARSIP SURAT MASUK', ['No','Tanggal Terima','Nomor Surat','Tanggal Surat','Pengirim','Perihal','Disposisi'], [...state.incoming].sort((a,b)=>(a.receivedDate||'').localeCompare(b.receivedDate||'')).map((r,i)=>[i+1,formatDate(r.receivedDate),r.letterNumber,r.letterDate?formatDate(r.letterDate):'',r.sender,r.subject,r.disposition])],
+    ['ARSIP SURAT KELUAR', ['No','Tanggal Keluar','Nomor Surat','Jenis','Tujuan','Perihal','Keterangan'], [...state.outgoing].sort((a,b)=>(a.issuedDate||'').localeCompare(b.issuedDate||'')).map((r,i)=>[i+1,formatDate(r.issuedDate),r.number,r.letterType,r.recipient,r.subject,r.notes])],
+    ['ARSIP SURAT TUGAS', ['No','Tanggal','Nomor Surat','Perihal','Penerima','Kegiatan','Tempat'], [...state.tasks].sort((a,b)=>(a.issuedDate||'').localeCompare(b.issuedDate||'')).map((r,i)=>[i+1,formatDate(r.issuedDate),r.number,r.subject,r.recipient,r.eventName,r.place])],
+  ];
+  const table = tables[{ incoming: 0, outgoing: 1, task: 2 }[kind] ?? 2];
+  const [title, headers, rows] = table;
+  const section = `<table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map(cell=>`<td>${escapeHtml(cell || '')}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  const officials = state.officials;
   const printWindow = window.open('', '_blank', 'width=1100,height=750');
   if (!printWindow) {
     showToast('Izinkan pop-up untuk mencetak arsip.');
     return;
   }
-  printWindow.document.write(`<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Arsip Surat Tugas</title><style>@page{size:A3 landscape;margin:12mm}body{font:10px Arial,sans-serif;color:#111}h1{text-align:center;font-size:16px}p{text-align:center}table{width:100%;border-collapse:collapse}th,td{border:1px solid #333;padding:4px;text-align:left;vertical-align:top}th{background:#eef2ee}@media print{tr{break-inside:avoid}}</style></head><body><h1>ARSIP SURAT TUGAS</h1><p>SMP NEGERI 13 TASIKMALAYA</p><table><thead><tr><th>No</th><th>No Surat Tugas</th><th>Dasar Surat</th><th>Nomor Surat</th><th>Tanggal Surat</th><th>Perihal</th><th>Nama yang Diberi Tugas</th><th>Nama Kegiatan</th><th>Hari</th><th>Tanggal</th><th>Waktu</th><th>Tempat</th><th>Lampiran</th></tr></thead><tbody>${archiveRows}</tbody></table><script>window.onload=()=>window.print()<\/script></body></html>`);
+  const archiveOfficer = state.officialsMaster.find((person) => person.role === 'Petugas') || state.officialsMaster[0] || {};
+  printWindow.document.write(`<!doctype html><html lang="id"><head><meta charset="utf-8"><title>${title}</title><style>@page{size:A4 landscape;margin:12mm}body{font:10px Arial,sans-serif;color:#111}.kop{display:grid;grid-template-columns:70px 1fr 70px;align-items:center;text-align:center;border-bottom:3px double #111;padding-bottom:8px}.kop img{width:60px;height:60px;object-fit:contain}.kop strong{display:block;font-size:14px}.kop p{margin:3px}h1{text-align:center;font-size:16px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #333;padding:4px;text-align:left;vertical-align:top}th{background:#eef2ee}.signatures{display:flex;justify-content:flex-end;gap:45px;margin:34px 8mm 0 0;text-align:center}.signature{width:190px}.space{height:55px}@media print{tr{break-inside:avoid}}</style></head><body><header class="kop"><img src="${cityLogoSrc}" alt=""><div><strong>PEMERINTAH KOTA TASIKMALAYA</strong><strong>SMP NEGERI 13 TASIKMALAYA</strong><p>Jl. Letjen H. Ibrahim Adjie Km.2 Indihiang Tasikmalaya 46151 Telp. (0265) 335695</p></div><img src="${schoolLogoSrc}" alt=""></header><h1>${title}</h1>${section}<div class="signatures"><div class="signature">Mengetahui,<br>Kepala Sekolah<div class="space"></div>${escapeHtml(officials.principalName || '')}<br>NIP. ${escapeHtml(officials.principalNip || '')}</div><div class="signature">${escapeHtml(archiveOfficer.role || 'Petugas')}<div class="space"></div>${escapeHtml(archiveOfficer.name || '')}<br>${archiveOfficer.nip ? `NIP. ${escapeHtml(archiveOfficer.nip)}` : ''}</div></div><script>window.onload=()=>window.print()<\\/script></body></html>`);
   printWindow.document.close();
 }
 
@@ -2368,7 +2409,12 @@ function handleAction(action, element) {
   if (action === 'close-dialog') document.getElementById('record-dialog').close();
   if (action === 'close-print-dialog') document.getElementById('print-dialog').close();
   if (action === 'print-options') openPrintOptions(element.dataset.id);
-  if (action === 'print-archive') printArchive();
+  if (action === 'print-archive') printArchive(element.dataset.archiveType);
+  if (action === 'open-incoming-file') {
+    const record = state.incoming.find((row) => row.id === element.dataset.id);
+    try { const file = JSON.parse(record.attachment); const link = document.createElement('a'); link.href = file.data; link.target = '_blank'; link.rel = 'noopener'; link.download = file.name; link.click(); } catch (_) { showToast('Berkas tidak dapat dibuka.'); }
+  }
+  if (action === 'delete-official') { state.officialsMaster.splice(Number(element.dataset.id), 1); saveState(); }
   if (action === 'download-teacher-template') downloadRosterTemplate('teachers');
   if (action === 'download-student-template') downloadRosterTemplate('students');
   if (action === 'export-agenda') exportAgenda();
@@ -2420,7 +2466,7 @@ function migrateToSpreadsheet() {
     if (!connected) return;
     try {
       const rows = Object.fromEntries(['tasks', 'incoming', 'outgoing', 'teachers', 'students'].map((key) => [key, localSnapshot[key] || []]));
-      rows.settings = [{ id: 'application', officials: localSnapshot.officials || {}, officialHistory: localSnapshot.officialHistory || {}, updatedAt: new Date().toISOString() }];
+      rows.settings = [{ id: 'application', officials: localSnapshot.officials || {}, officialHistory: localSnapshot.officialHistory || {}, officialsMaster: localSnapshot.officialsMaster || [], updatedAt: new Date().toISOString() }];
       await writeAllToSheet(rows);
       showToast('Data lokal berhasil digabungkan ke Spreadsheet; data yang sudah ada tetap dipertahankan.');
     } catch (error) { showToast(`Migrasi gagal: ${error.message}`); }
@@ -2597,6 +2643,13 @@ document.getElementById('officials-form').addEventListener('submit', (event) => 
   };
   saveState();
   showToast('Pejabat penandatangan berhasil disimpan.');
+});
+
+document.getElementById('official-master-form').addEventListener('submit', (event) => {
+  event.preventDefault();
+  const values = collectFormData(event.currentTarget);
+  state.officialsMaster.push({ id: crypto.randomUUID(), name: values.name.trim(), role: values.role.trim(), nip: values.nip.trim() });
+  event.currentTarget.reset(); saveState(); showToast('Petugas berhasil ditambahkan ke master data.');
 });
 
 document.addEventListener('change', (event) => {

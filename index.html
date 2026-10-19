@@ -38,7 +38,7 @@
 
       <section class="page is-visible" id="page-overview" aria-labelledby="overview-title">
         <div class="page-heading overview-heading">
-          <div><p class="eyebrow">BUKU ADMINISTRASI</p><h1 id="overview-title">Persuratan, tertata.</h1><p class="heading-note">SMP Negeri 13 Tasikmalaya <span class="note-divider">/</span> <span id="overview-year"></span></p></div>
+          <div><p class="eyebrow">BUKU ADMINISTRASI</p><h1 id="overview-title">Persuratan, Tertata.</h1><p class="heading-note">SMP Negeri 13 Tasikmalaya <span class="note-divider">/</span> <span id="overview-year"></span></p></div>
           <button class="button button-outline" data-action="new-incoming"><span class="button-plus">+</span> Catat surat masuk</button>
         </div>
 
@@ -74,7 +74,7 @@
       <section class="page" id="page-archive" aria-labelledby="archive-title">
         <div class="page-heading">
           <div><p class="eyebrow">DOKUMEN TERBIT</p><h1 id="archive-title">Arsip surat tugas</h1><p class="heading-note">Nomor, petugas, dan rincian kegiatan dalam satu daftar.</p></div>
-          <div class="heading-actions"><button class="button button-outline" data-action="print-archive"><span aria-hidden="true">▤</span> Cetak arsip</button><button class="button button-primary" data-action="new-task"><span class="button-plus">+</span> Buat surat tugas</button></div>
+          <div class="heading-actions"><button class="button button-primary" data-action="new-task"><span class="button-plus">+</span> Buat surat tugas</button></div>
         </div>
         <div class="toolbar">
           <label class="search-field"><span aria-hidden="true">⌕</span><input id="archive-search" type="search" placeholder="Cari nomor, perihal, petugas..." aria-label="Cari arsip surat tugas"></label>
@@ -96,6 +96,9 @@
           </div>
           <div class="toolbar-inline">
             <label class="search-field search-compact"><span aria-hidden="true">⌕</span><input id="agenda-search" type="search" placeholder="Cari agenda..." aria-label="Cari agenda surat"></label>
+            <button class="button button-outline" id="print-incoming-button" data-action="print-archive" data-archive-type="incoming">Cetak surat masuk</button>
+            <button class="button button-outline" id="print-outgoing-button" data-action="print-archive" data-archive-type="outgoing" hidden>Cetak surat keluar</button>
+            <button class="button button-outline" id="print-task-button" data-action="print-archive" data-archive-type="task" hidden>Cetak surat tugas</button>
             <button class="button button-outline" data-action="export-agenda"><span aria-hidden="true">↓</span> Ekspor CSV</button>
           </div>
         </div>
@@ -121,6 +124,10 @@
               <button class="button button-primary" type="submit">Simpan pejabat</button>
             </form>
           </section>
+          <section class="settings-section"><div class="settings-title"><span class="settings-icon">P</span><div><h2>Master Petugas</h2><p>Daftar petugas yang dapat dicantumkan pada cetak arsip.</p></div></div>
+            <form id="official-master-form" class="officials-form"><div class="official-fields"><label class="field"><span>Nama Petugas *</span><input name="name" required></label><label class="field"><span>Jabatan</span><input name="role" value="Petugas"></label><label class="field"><span>NIP</span><input name="nip"></label></div><button class="button button-outline" type="submit">Tambah Petugas</button></form>
+            <div class="official-history-wrap"><table class="official-history-table"><thead><tr><th>Nama</th><th>Jabatan</th><th>NIP</th><th></th></tr></thead><tbody id="officials-master-list"></tbody></table></div>
+          </section>
           <section class="settings-section"><div class="settings-title"><span class="settings-icon">G</span><div><h2>Master guru & siswa</h2><p>Unduh format Excel untuk diisi, lalu unggah kembali sebagai data pilihan di formulir surat tugas.</p></div></div>
             <div class="master-imports">
               <div class="master-import-row"><div><strong>Data guru</strong><small id="teacher-master-count">0 guru</small><span>Kolom: No, Nama, NIP, Gol, PANGKAT, JABATAN</span></div><div class="master-actions"><button class="button button-outline" data-action="download-teacher-template">Unduh Excel</button><label class="button button-outline import-button">Unggah Excel / CSV<input id="teacher-master-input" data-master-type="teachers" type="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" hidden></label></div></div>
@@ -128,11 +135,24 @@
             </div>
             <p class="settings-hint master-hint">Isi data mulai baris kedua tanpa mengubah judul kolom. Impor Excel/CSV mengganti daftar master sebelumnya.</p>
           </section>
-          <section class="settings-section"><div class="settings-title"><span class="settings-icon">↕</span><div><h2>Cadangan data</h2><p>Data disimpan lokal di browser ini, bukan di server.</p></div></div>
+          <section class="settings-section"><div class="settings-title"><span class="settings-icon">↕</span><div><h2>Cadangan data</h2><p>Ekspor dan impor seluruh data sebagai file JSON.</p></div></div>
             <div class="backup-actions"><button class="button button-outline" data-action="export-backup"><span aria-hidden="true">↓</span> Unduh cadangan JSON</button><label class="button button-outline import-button"><span aria-hidden="true">↑</span> Impor cadangan<input id="backup-input" type="file" accept="application/json,.json" hidden></label></div>
             <p class="settings-hint">Gunakan cadangan untuk memindahkan arsip ke browser atau perangkat lain. CSV agenda dapat dibuka di spreadsheet.</p>
           </section>
-          <div class="storage-notice"><span class="status-dot"></span><span><strong id="storage-record-count">0 catatan tersimpan</strong><br>Peramban yang berbeda tidak berbagi data secara otomatis.</span></div>
+          <section class="settings-section"><div class="settings-title"><span class="settings-icon">☁</span><div><h2>Google Spreadsheet & storage</h2><p>Simpan data ke spreadsheet Google, bukan hanya di browser.</p></div></div>
+            <div class="spreadsheet-setup">
+              <div class="field"><label>API URL (Web App)</label><input id="api-url-input" type="url" placeholder="https://script.google.com/macros/s/{WEB_APP_ID}/exec"><small>Gunakan URL deployment dari proyek Apps Script 1o7jlw-sVmKfBLcgWXdS1hfMyTrL4zwJNtoq-IXuCMQ5-CeMF_5tKBO7Z. ID skrip dan ID spreadsheet 1C5Cp6ikblC_8GrJeLbRjYWtUEtX7i6InXRygjLO8_c8 adalah nilai berbeda, bukan URL.</small></div>
+              <div class="field"><label>API key (opsional)</label><input id="api-key-input" type="password" autocomplete="off" placeholder="Shared secret dari Environment variables"><small>Key hanya digunakan dalam sesi ini. Key di aplikasi browser dapat dilihat pengguna browser dan bukan perlindungan kuat untuk endpoint publik.</small></div>
+              <div class="spreadsheet-actions">
+                <button class="button button-outline" data-action="connect-spreadsheet">☁ Koneksikan ke Spreadsheet</button>
+                <button class="button button-outline" data-action="migrate-to-spreadsheet">↻ Migrasikan data lokal ke Spreadsheet</button>
+                <button class="button button-outline" data-action="reconnect-spreadsheet">⟳ Ulangi koneksi</button>
+                <button class="button button-outline" data-action="test-spreadsheet">✓ Uji koneksi</button>
+              </div>
+            </div>
+            <p class="settings-hint" id="spreadsheet-status">Belum dikonfigurasi. Data tetap tersimpan di localStorage sampai Anda klik "Koneksikan ke Spreadsheet".</p>
+          </section>
+          <div class="storage-notice"><span class="status-dot"></span><span><strong id="storage-record-count">0 catatan tersimpan</strong><br>Data tersimpan di browser ini. Pilih "Koneksikan ke Spreadsheet" untuk menyimpan ke Google Spreadsheet yang dapat diakses dari perangkat lain.</span></div>
         </div>
       </section>
       <footer class="app-footer"><span>Administrasi Persuratan</span><span>SMP Negeri 13 Tasikmalaya</span></footer>
