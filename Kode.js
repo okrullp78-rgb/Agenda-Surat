@@ -107,6 +107,19 @@ function simpanSuratMasuk(form) {
     throw new Error('Tanggal surat, tanggal terima, asal surat, dan perihal wajib diisi.');
   }
 
+  // Jika ada berkas dokumen yang diunggah dari komputer, simpan ke Google Drive
+  if (form.berkasBase64 && form.berkasNama) {
+    try {
+      const linkFileDrive = simpanBerkasKeDrive_(form.berkasNama, form.berkasType, form.berkasBase64);
+      if (linkFileDrive) {
+        form.linkDokumen = linkFileDrive;
+      }
+    } catch (errDrive) {
+      Logger.log('Gagal menyimpan berkas ke Google Drive: ' + errDrive.message);
+      throw new Error('Gagal mengunggah berkas ke Drive: ' + errDrive.message);
+    }
+  }
+
   const idAda = String(form.idSurat || form.id || '').trim();
   const lock = LockService.getScriptLock();
   lock.waitLock(15000);
@@ -228,6 +241,42 @@ function ambilSuratMasuk() {
       keterangan: row[10]
     };
   });
+}
+
+function simpanBerkasKeDrive_(namaFile, mimeType, base64Data) {
+  const namaFolder = 'Arsip_Surat_Masuk';
+  const folderIter = DriveApp.getFoldersByName(namaFolder);
+  let folder;
+  if (folderIter.hasNext()) {
+    folder = folderIter.next();
+  } else {
+    folder = DriveApp.createFolder(namaFolder);
+  }
+
+  let cleanBase64 = String(base64Data || '');
+  if (cleanBase64.indexOf('base64,') > -1) {
+    cleanBase64 = cleanBase64.split('base64,')[1];
+  }
+
+  const bytes = Utilities.base64Decode(cleanBase64);
+  const blob = Utilities.newBlob(bytes, mimeType || 'application/octet-stream', namaFile || 'Berkas_Surat_Masuk.pdf');
+  const file = folder.createFile(blob);
+
+  try {
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  } catch (eShare) {
+    Logger.log('Set sharing error: ' + eShare.message);
+  }
+
+  return file.getUrl();
+}
+
+function unggahBerkasSuratMasuk(namaFile, mimeType, base64Data) {
+  const url = simpanBerkasKeDrive_(namaFile, mimeType, base64Data);
+  return {
+    sukses: true,
+    url: url
+  };
 }
 
 function siapkanDatabase() {
@@ -370,6 +419,15 @@ function siapkanDatabase() {
       'Parameter',
       'Nilai',
       'Keterangan'
+    ],
+
+    'Pejabat': [
+      'ID_Pejabat',
+      'Kategori',
+      'Nama',
+      'NIP',
+      'Jabatan',
+      'Keterangan'
     ]
   };
 
@@ -413,10 +471,16 @@ function siapkanDatabase() {
     ['Zona_Waktu', 'Asia/Jakarta', 'Zona waktu aplikasi'],
     ['Alamat_Sekolah', '', 'Alamat resmi sekolah (isi jika sudah tersedia)'],
     ['Telepon_Sekolah', '', 'Nomor telepon sekolah (isi jika sudah tersedia)'],
-    ['Kota_Surat', '', 'Kota pada tanggal surat (isi jika sudah tersedia)'],
+    ['Kota_Surat', 'Tasikmalaya', 'Kota pada tanggal surat'],
     ['Nama_Kepala_Sekolah', '', 'Nama kepala sekolah (isi jika sudah tersedia)'],
-    ['Jabatan_Kepala_Sekolah', '', 'Jabatan pejabat pada kop/tanda tangan'],
-    ['NIP_Kepala_Sekolah', '', 'NIP kepala sekolah (isi jika sudah tersedia)']
+    ['Jabatan_Kepala_Sekolah', 'Kepala Sekolah', 'Jabatan pejabat pada kop/tanda tangan'],
+    ['NIP_Kepala_Sekolah', '', 'NIP kepala sekolah (isi jika sudah tersedia)'],
+    ['Nama_Bendahara', '', 'Nama bendahara sekolah'],
+    ['Jabatan_Bendahara', 'Bendahara', 'Jabatan bendahara sekolah'],
+    ['NIP_Bendahara', '', 'NIP bendahara sekolah'],
+    ['Nama_Petugas', '', 'Nama petugas agenda / pengadministrasi surat'],
+    ['Jabatan_Petugas', 'Pengadministrasi Persuratan', 'Jabatan petugas pengelola surat'],
+    ['NIP_Petugas', '', 'NIP / NUPTK petugas agenda']
   ];
 
   const parameterAda = pengaturan.getLastRow() > 1
@@ -430,6 +494,13 @@ function siapkanDatabase() {
       pengaturan.appendRow(baris);
     }
   });
+
+  const sheetPejabat = ss.getSheetByName('Pejabat');
+  if (sheetPejabat && sheetPejabat.getLastRow() < 2) {
+    sheetPejabat.appendRow(['PEJ-01', 'Kepala Sekolah', '', '', 'Kepala Sekolah', 'Pejabat Penandatangan Utama']);
+    sheetPejabat.appendRow(['PEJ-02', 'Bendahara', '', '', 'Bendahara', 'Pejabat Keuangan']);
+    sheetPejabat.appendRow(['PEJ-03', 'Petugas', '', '', 'Pengadministrasi Persuratan', 'Petugas Agenda & Arsip']);
+  }
 
   const sheetKeluar = ss.getSheetByName('Surat_Keluar');
   if (sheetKeluar) {
@@ -700,10 +771,16 @@ function ambilPengaturanKop() {
     namaSekolah: NAMA_SEKOLAH,
     alamat: '',
     telepon: '',
-    kota: '',
+    kota: 'Tasikmalaya',
     namaKepala: '',
-    jabatanKepala: '',
-    nipKepala: ''
+    jabatanKepala: 'Kepala Sekolah',
+    nipKepala: '',
+    namaBendahara: '',
+    jabatanBendahara: 'Bendahara',
+    nipBendahara: '',
+    namaPetugas: '',
+    jabatanPetugas: 'Pengadministrasi Persuratan',
+    nipPetugas: ''
   };
 
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
@@ -731,8 +808,177 @@ function ambilPengaturanKop() {
   if (peta.Nama_Kepala_Sekolah) hasil.namaKepala = peta.Nama_Kepala_Sekolah;
   if (peta.Jabatan_Kepala_Sekolah) hasil.jabatanKepala = peta.Jabatan_Kepala_Sekolah;
   if (peta.NIP_Kepala_Sekolah) hasil.nipKepala = peta.NIP_Kepala_Sekolah;
+  if (peta.Nama_Bendahara) hasil.namaBendahara = peta.Nama_Bendahara;
+  if (peta.Jabatan_Bendahara) hasil.jabatanBendahara = peta.Jabatan_Bendahara;
+  if (peta.NIP_Bendahara) hasil.nipBendahara = peta.NIP_Bendahara;
+  if (peta.Nama_Petugas) hasil.namaPetugas = peta.Nama_Petugas;
+  if (peta.Jabatan_Petugas) hasil.jabatanPetugas = peta.Jabatan_Petugas;
+  if (peta.NIP_Petugas) hasil.nipPetugas = peta.NIP_Petugas;
 
   return hasil;
+}
+
+function pastikanSheetPejabat_(ss) {
+  let sheet = ss.getSheetByName('Pejabat');
+  if (!sheet) {
+    sheet = ss.insertSheet('Pejabat');
+  }
+  const header = ['ID_Pejabat', 'Kategori', 'Nama', 'NIP', 'Jabatan', 'Keterangan'];
+  if (sheet.getLastRow() < 1) {
+    sheet.getRange(1, 1, 1, header.length).setValues([header]);
+    sheet.setFrozenRows(1);
+    sheet.getRange(1, 1, 1, header.length)
+      .setFontWeight('bold')
+      .setBackground('#0f766e')
+      .setFontColor('#ffffff');
+    sheet.autoResizeColumns(1, header.length);
+  }
+  if (sheet.getLastRow() < 2) {
+    sheet.appendRow(['PEJ-01', 'Kepala Sekolah', '', '', 'Kepala Sekolah', 'Pejabat Penandatangan Utama']);
+    sheet.appendRow(['PEJ-02', 'Bendahara', '', '', 'Bendahara', 'Pejabat Keuangan']);
+    sheet.appendRow(['PEJ-03', 'Petugas', '', '', 'Pengadministrasi Persuratan', 'Petugas Agenda & Arsip']);
+  }
+  return sheet;
+}
+
+function ambilMasterPejabat() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  pastikanSheetPejabat_(ss);
+
+  const hasil = {
+    kop: {
+      namaSekolah: NAMA_SEKOLAH,
+      alamat: '',
+      telepon: '',
+      kota: 'Tasikmalaya'
+    },
+    kepalaSekolah: { nama: '', nip: '', jabatan: 'Kepala Sekolah' },
+    bendahara: { nama: '', nip: '', jabatan: 'Bendahara' },
+    petugas: { nama: '', nip: '', jabatan: 'Pengadministrasi Persuratan' }
+  };
+
+  const sheetPengaturan = ss.getSheetByName('Pengaturan');
+  if (sheetPengaturan && sheetPengaturan.getLastRow() > 1) {
+    const data = sheetPengaturan.getRange(
+      2, 1, sheetPengaturan.getLastRow() - 1, 2
+    ).getDisplayValues();
+
+    const peta = {};
+    data.forEach(function(r) {
+      if (r[0]) peta[r[0]] = String(r[1] || '').trim();
+    });
+
+    if (peta.Nama_Sekolah) hasil.kop.namaSekolah = peta.Nama_Sekolah;
+    if (peta.Alamat_Sekolah) hasil.kop.alamat = peta.Alamat_Sekolah;
+    if (peta.Telepon_Sekolah) hasil.kop.telepon = peta.Telepon_Sekolah;
+    if (peta.Kota_Surat) hasil.kop.kota = peta.Kota_Surat;
+
+    if (peta.Nama_Kepala_Sekolah) hasil.kepalaSekolah.nama = peta.Nama_Kepala_Sekolah;
+    if (peta.NIP_Kepala_Sekolah) hasil.kepalaSekolah.nip = peta.NIP_Kepala_Sekolah;
+    if (peta.Jabatan_Kepala_Sekolah) hasil.kepalaSekolah.jabatan = peta.Jabatan_Kepala_Sekolah;
+
+    if (peta.Nama_Bendahara) hasil.bendahara.nama = peta.Nama_Bendahara;
+    if (peta.NIP_Bendahara) hasil.bendahara.nip = peta.NIP_Bendahara;
+    if (peta.Jabatan_Bendahara) hasil.bendahara.jabatan = peta.Jabatan_Bendahara;
+
+    if (peta.Nama_Petugas) hasil.petugas.nama = peta.Nama_Petugas;
+    if (peta.NIP_Petugas) hasil.petugas.nip = peta.NIP_Petugas;
+    if (peta.Jabatan_Petugas) hasil.petugas.jabatan = peta.Jabatan_Petugas;
+  }
+
+  const sheetPejabat = ss.getSheetByName('Pejabat');
+  if (sheetPejabat && sheetPejabat.getLastRow() > 1) {
+    const dataP = sheetPejabat.getRange(
+      2, 1, sheetPejabat.getLastRow() - 1, 5
+    ).getDisplayValues();
+
+    dataP.forEach(function(row) {
+      const kat = String(row[1] || '').toUpperCase();
+      if (kat.indexOf('KEPALA') > -1) {
+        if (row[2]) hasil.kepalaSekolah.nama = row[2];
+        if (row[3]) hasil.kepalaSekolah.nip = row[3];
+        if (row[4]) hasil.kepalaSekolah.jabatan = row[4];
+      } else if (kat.indexOf('BENDAHARA') > -1) {
+        if (row[2]) hasil.bendahara.nama = row[2];
+        if (row[3]) hasil.bendahara.nip = row[3];
+        if (row[4]) hasil.bendahara.jabatan = row[4];
+      } else if (kat.indexOf('PETUGAS') > -1) {
+        if (row[2]) hasil.petugas.nama = row[2];
+        if (row[3]) hasil.petugas.nip = row[3];
+        if (row[4]) hasil.petugas.jabatan = row[4];
+      }
+    });
+  }
+
+  return hasil;
+}
+
+function simpanMasterPejabat(data) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  pastikanSheetPejabat_(ss);
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+
+  try {
+    const sheetPengaturan = ss.getSheetByName('Pengaturan');
+    if (sheetPengaturan) {
+      const nilaiSimpan = {
+        'Nama_Sekolah': (data.kop && data.kop.namaSekolah) || NAMA_SEKOLAH,
+        'Alamat_Sekolah': (data.kop && data.kop.alamat) || '',
+        'Telepon_Sekolah': (data.kop && data.kop.telepon) || '',
+        'Kota_Surat': (data.kop && data.kop.kota) || 'Tasikmalaya',
+        'Nama_Kepala_Sekolah': (data.kepalaSekolah && data.kepalaSekolah.nama) || '',
+        'NIP_Kepala_Sekolah': (data.kepalaSekolah && data.kepalaSekolah.nip) || '',
+        'Jabatan_Kepala_Sekolah': (data.kepalaSekolah && data.kepalaSekolah.jabatan) || 'Kepala Sekolah',
+        'Nama_Bendahara': (data.bendahara && data.bendahara.nama) || '',
+        'NIP_Bendahara': (data.bendahara && data.bendahara.nip) || '',
+        'Jabatan_Bendahara': (data.bendahara && data.bendahara.jabatan) || 'Bendahara',
+        'Nama_Petugas': (data.petugas && data.petugas.nama) || '',
+        'NIP_Petugas': (data.petugas && data.petugas.nip) || '',
+        'Jabatan_Petugas': (data.petugas && data.petugas.jabatan) || 'Pengadministrasi Persuratan'
+      };
+
+      const lastRow = sheetPengaturan.getLastRow();
+      const existingParams = lastRow > 1
+        ? sheetPengaturan.getRange(2, 1, lastRow - 1, 1).getDisplayValues().map(function(r) { return r[0]; })
+        : [];
+
+      Object.keys(nilaiSimpan).forEach(function(param) {
+        const idx = existingParams.indexOf(param);
+        if (idx > -1) {
+          sheetPengaturan.getRange(idx + 2, 2).setValue(nilaiSimpan[param]);
+        } else {
+          sheetPengaturan.appendRow([param, nilaiSimpan[param], 'Pengaturan Master']);
+          existingParams.push(param);
+        }
+      });
+    }
+
+    const sheetPejabat = ss.getSheetByName('Pejabat');
+    if (sheetPejabat) {
+      const rows = [
+        ['PEJ-01', 'Kepala Sekolah', (data.kepalaSekolah && data.kepalaSekolah.nama) || '', (data.kepalaSekolah && data.kepalaSekolah.nip) || '', (data.kepalaSekolah && data.kepalaSekolah.jabatan) || 'Kepala Sekolah', 'Pejabat Penandatangan Utama'],
+        ['PEJ-02', 'Bendahara', (data.bendahara && data.bendahara.nama) || '', (data.bendahara && data.bendahara.nip) || '', (data.bendahara && data.bendahara.jabatan) || 'Bendahara', 'Pejabat Keuangan'],
+        ['PEJ-03', 'Petugas', (data.petugas && data.petugas.nama) || '', (data.petugas && data.petugas.nip) || '', (data.petugas && data.petugas.jabatan) || 'Pengadministrasi Persuratan', 'Petugas Agenda & Arsip']
+      ];
+
+      const lastRowP = sheetPejabat.getLastRow();
+      if (lastRowP > 1) {
+        sheetPejabat.getRange(2, 1, lastRowP - 1, 6).clearContent();
+      }
+      sheetPejabat.getRange(2, 1, rows.length, 6).setValues(rows);
+    }
+
+    SpreadsheetApp.flush();
+
+    return {
+      sukses: true,
+      pesan: 'Data Master Pejabat dan Kop Surat berhasil disimpan permanen ke Spreadsheet.'
+    };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function ambilSuratKeluarById(id) {

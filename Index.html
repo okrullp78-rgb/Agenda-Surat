@@ -505,6 +505,60 @@
       font-size: 12px;
     }
 
+    .kop-arsip-wrap {
+      text-align: center;
+      margin-bottom: 12px;
+      display: none;
+    }
+    .kop-arsip-nama {
+      font-size: 18px;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin: 0;
+      letter-spacing: 0.5px;
+    }
+    .kop-arsip-alamat, .kop-arsip-telepon {
+      font-size: 12px;
+      margin: 2px 0;
+      color: #333;
+    }
+    .kop-arsip-garis {
+      border-top: 1px solid #000;
+      border-bottom: 3px solid #000;
+      height: 2px;
+      margin-top: 8px;
+      margin-bottom: 14px;
+    }
+    .ttd-arsip-grid {
+      display: none;
+      margin-top: 28px;
+      justify-content: space-between;
+      page-break-inside: avoid;
+      font-size: 12px;
+    }
+    .ttd-box {
+      width: 260px;
+      text-align: center;
+    }
+    .ttd-status {
+      margin: 0;
+    }
+    .ttd-jabatan {
+      margin: 2px 0 0 0;
+      font-weight: bold;
+    }
+    .ttd-spasi {
+      height: 55px;
+    }
+    .ttd-nama {
+      margin: 0;
+      font-weight: bold;
+      text-decoration: underline;
+    }
+    .ttd-nip {
+      margin: 2px 0 0 0;
+    }
+
     @media (max-width: 850px) {
       .container {
         display: block;
@@ -633,6 +687,14 @@
         background: white;
         color: black;
         padding: 0;
+      }
+
+      body.print-mode .kop-arsip-wrap {
+        display: block !important;
+      }
+
+      body.print-mode .ttd-arsip-grid {
+        display: flex !important;
       }
 
       body.print-surat header,
@@ -766,6 +828,7 @@
     <button class="menu" data-page="dokDaftarPenyerahan">Daftar Penyerahan</button>
     <button class="menu" data-page="dokSuratTugasSiswa">Surat Tugas Siswa</button>
     <button class="menu" data-page="dokDaftarPenyerahanSiswa">Penyerahan Siswa</button>
+    <button class="menu" data-page="masterPejabat">Master Data & Pejabat</button>
   </aside>
 
   <main>
@@ -879,9 +942,15 @@
             </div>
 
             <div class="field full">
-              <label>Link Dokumen</label>
-              <input type="url" name="linkDokumen"
-                placeholder="Tautan file di Google Drive (jika ada)">
+              <label>Upload Berkas Dokumen Surat (PDF / Scan / Foto)</label>
+              <input type="file" id="berkasMasukFile" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="background:#fff; border:1px solid #cbd5e1; padding:8px; border-radius:6px; width:100%;">
+              <small class="muted" style="display:block; margin-top:4px;">Pilih berkas dokumen fisik/scan dari perangkat. Berkas akan otomatis diunggah ke Google Drive dan dapat dibuka admin kapan saja.</small>
+            </div>
+
+            <div class="field full">
+              <label>Link Dokumen (Google Drive)</label>
+              <input type="url" name="linkDokumen" id="linkDokumenMasuk"
+                placeholder="Tautan file di Google Drive (terisi otomatis saat mengunggah berkas atau bisa diisi manual)">
             </div>
 
             <div class="field full">
@@ -942,6 +1011,9 @@
         <div class="actions no-print">
           <button class="btn" onclick="muatSuratMasuk()">
             Muat Ulang Data
+          </button>
+          <button class="btn secondary" onclick="cetakArsipSuratMasukLangsung()">
+            🖨️ Cetak Arsip Surat Masuk
           </button>
         </div>
       </div>
@@ -1480,9 +1552,16 @@
       </div>
 
       <div class="card report-print-area">
+        <!-- KOP SURAT CETAK ARSIP -->
+        <div class="kop-arsip-wrap">
+          <h2 id="cetakKopNama" class="kop-arsip-nama">SMP NEGERI 13 TASIKMALAYA</h2>
+          <p id="cetakKopAlamat" class="kop-arsip-alamat"></p>
+          <p id="cetakKopTelepon" class="kop-arsip-telepon"></p>
+          <div class="kop-arsip-garis"></div>
+        </div>
+
         <div class="report-heading">
-          <h2>LAPORAN AGENDA SURAT</h2>
-          <p>SMP NEGERI 13 TASIKMALAYA</p>
+          <h2 id="judulRekapArsip">LAPORAN AGENDA SURAT</h2>
           <p id="cetakPeriode"></p>
         </div>
 
@@ -1528,7 +1607,143 @@
           </table>
         </div>
 
-        <p class="muted" id="waktuLaporan"></p>
+        <p class="muted no-print" id="waktuLaporan"></p>
+
+        <!-- FORMAT TANDA TANGAN DINAS (MENGETAHUI KEPALA SEKOLAH DI KIRI, PETUGAS DI KANAN) -->
+        <div class="ttd-arsip-grid">
+          <div class="ttd-box">
+            <p class="ttd-status">Mengetahui,</p>
+            <p class="ttd-jabatan" id="ttdJabatanKepalaArsip">Kepala Sekolah</p>
+            <div class="ttd-spasi"></div>
+            <p class="ttd-nama" id="ttdNamaKepalaArsip">( ............................................ )</p>
+            <p class="ttd-nip" id="ttdNipKepalaArsip">NIP. ........................................</p>
+          </div>
+
+          <div class="ttd-box">
+            <p class="ttd-status" id="ttdKotaTanggalArsip">Tasikmalaya, -</p>
+            <p class="ttd-jabatan" id="ttdJabatanPetugasArsip">Pengadministrasi Persuratan</p>
+            <div class="ttd-spasi"></div>
+            <p class="ttd-nama" id="ttdNamaPetugasArsip">( ............................................ )</p>
+            <p class="ttd-nip" id="ttdNipPetugasArsip">NIP. ........................................</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MASTER DATA & PEJABAT -->
+    <section id="masterPejabat" class="page">
+      <h2 class="page-title no-print">Master Data Pejabat & Kop Surat</h2>
+
+      <div class="card no-print">
+        <p class="muted" style="margin-top:0;">
+          Data pejabat dan kop sekolah disimpan langsung ke Google Spreadsheet sehingga permanen dan tidak akan hilang saat halaman dimuat ulang/refresh.
+        </p>
+
+        <form id="formMasterPejabat">
+          <!-- KOP SURAT SEKOLAH -->
+          <h3 style="margin-top: 16px; border-bottom: 2px solid #0f766e; padding-bottom: 6px; color: #0f766e;">
+            🏫 Pengaturan Kop Surat Sekolah
+          </h3>
+
+          <div class="form-grid">
+            <div class="field full">
+              <label>Nama Sekolah *</label>
+              <input name="kopNamaSekolah" id="masterKopNama" required placeholder="Contoh: SMP Negeri 13 Tasikmalaya">
+            </div>
+
+            <div class="field full">
+              <label>Alamat Sekolah</label>
+              <input name="kopAlamat" id="masterKopAlamat" placeholder="Contoh: Jl. Perintis Kemerdekaan, Kota Tasikmalaya">
+            </div>
+
+            <div class="field">
+              <label>Telepon / Kontak / Email</label>
+              <input name="kopTelepon" id="masterKopTelepon" placeholder="Contoh: (0265) 331313 / smpn13tasikmalaya13@gmail.com">
+            </div>
+
+            <div class="field">
+              <label>Kota Surat</label>
+              <input name="kopKota" id="masterKopKota" placeholder="Contoh: Tasikmalaya">
+            </div>
+          </div>
+
+          <!-- KEPALA SEKOLAH -->
+          <h3 style="margin-top: 24px; border-bottom: 2px solid #0f766e; padding-bottom: 6px; color: #0f766e;">
+            👤 Pejabat: Kepala Sekolah
+          </h3>
+
+          <div class="form-grid">
+            <div class="field">
+              <label>Nama Kepala Sekolah (dengan Gelar) *</label>
+              <input name="kepalaNama" id="masterKepalaNama" required placeholder="Nama lengkap kepala sekolah">
+            </div>
+
+            <div class="field">
+              <label>NIP Kepala Sekolah</label>
+              <input name="kepalaNip" id="masterKepalaNip" placeholder="Nomor Induk Pegawai (NIP)">
+            </div>
+
+            <div class="field">
+              <label>Jabatan Penandatangan</label>
+              <input name="kepalaJabatan" id="masterKepalaJabatan" value="Kepala Sekolah" placeholder="Contoh: Kepala Sekolah / Plt. Kepala Sekolah">
+            </div>
+          </div>
+
+          <!-- BENDAHARA -->
+          <h3 style="margin-top: 24px; border-bottom: 2px solid #0f766e; padding-bottom: 6px; color: #0f766e;">
+            💰 Pejabat: Bendahara Sekolah
+          </h3>
+
+          <div class="form-grid">
+            <div class="field">
+              <label>Nama Bendahara</label>
+              <input name="bendaharaNama" id="masterBendaharaNama" placeholder="Nama lengkap bendahara">
+            </div>
+
+            <div class="field">
+              <label>NIP Bendahara</label>
+              <input name="bendaharaNip" id="masterBendaharaNip" placeholder="NIP Bendahara (jika ada)">
+            </div>
+
+            <div class="field">
+              <label>Jabatan Bendahara</label>
+              <input name="bendaharaJabatan" id="masterBendaharaJabatan" value="Bendahara" placeholder="Contoh: Bendahara">
+            </div>
+          </div>
+
+          <!-- PETUGAS PERSURATAN -->
+          <h3 style="margin-top: 24px; border-bottom: 2px solid #0f766e; padding-bottom: 6px; color: #0f766e;">
+            📋 Petugas: Pengadministrasi / Pengelola Persuratan
+          </h3>
+
+          <div class="form-grid">
+            <div class="field">
+              <label>Nama Petugas Persuratan *</label>
+              <input name="petugasNama" id="masterPetugasNama" required placeholder="Nama petugas pengelola agenda surat">
+            </div>
+
+            <div class="field">
+              <label>NIP / NUPTK Petugas</label>
+              <input name="petugasNip" id="masterPetugasNip" placeholder="NIP atau NUPTK petugas (jika ada)">
+            </div>
+
+            <div class="field">
+              <label>Jabatan Petugas</label>
+              <input name="petugasJabatan" id="masterPetugasJabatan" value="Pengadministrasi Persuratan" placeholder="Contoh: Pengadministrasi Persuratan / Petugas Agenda">
+            </div>
+          </div>
+
+          <div class="actions" style="margin-top: 24px;">
+            <button type="submit" class="btn" id="btnSimpanMasterPejabat">
+              💾 Simpan Master Data ke Spreadsheet
+            </button>
+            <button type="button" class="btn secondary" onclick="muatMasterPejabat(true)">
+              🔄 Muat Ulang dari Spreadsheet
+            </button>
+          </div>
+
+          <div id="pesanMasterPejabat" class="message"></div>
+        </form>
       </div>
     </section>
 
@@ -1582,6 +1797,10 @@
         muatDataLaporan();
       }
 
+      if (button.dataset.page === 'masterPejabat') {
+        muatMasterPejabat(false);
+      }
+
       if (DOKUMEN_PETA[button.dataset.page]) {
         bukaDokumenTerkait(button.dataset.page);
       }
@@ -1606,7 +1825,16 @@
       link.href = url;
       link.target = '_blank';
       link.rel = 'noopener noreferrer';
-      link.textContent = 'Buka dokumen';
+      link.className = 'btn small';
+      link.style.display = 'inline-flex';
+      link.style.alignItems = 'center';
+      link.style.background = '#0284c7';
+      link.style.color = '#ffffff';
+      link.style.textDecoration = 'none';
+      link.style.padding = '4px 8px';
+      link.style.fontSize = '12px';
+      link.style.borderRadius = '4px';
+      link.textContent = '📄 Buka Berkas';
       td.appendChild(link);
     } else {
       td.textContent = '-';
@@ -1792,37 +2020,63 @@
       var pesan = document.getElementById('pesanMasuk');
       var data = ambilDataForm(form);
       var sedangEdit = Boolean(data.idSurat);
+      var fileInput = document.getElementById('berkasMasukFile');
+      var file = fileInput && fileInput.files && fileInput.files.length ? fileInput.files[0] : null;
+
+      function kirimData(payload) {
+        google.script.run
+          .withSuccessHandler(function(hasil) {
+            tampilkanPesan(
+              pesan,
+              hasil.pesan + ' ID agenda: ' + hasil.id,
+              'success'
+            );
+
+            batalEditSuratMasuk();
+            tombol.disabled = false;
+
+            muatSuratMasuk();
+            muatDashboard();
+          })
+          .withFailureHandler(function(error) {
+            tampilkanPesan(
+              pesan,
+              'Gagal menyimpan surat masuk: ' + error.message,
+              'error'
+            );
+
+            tombol.disabled = false;
+            tombol.textContent = sedangEdit ? 'Perbarui Surat Masuk' : 'Simpan Surat Masuk';
+          })
+          .simpanSuratMasuk(payload);
+      }
 
       tombol.disabled = true;
-      tombol.textContent = sedangEdit ? 'Memperbarui...' : 'Menyimpan...';
 
-      tampilkanPesan(pesan, sedangEdit ? 'Memperbarui surat masuk...' : 'Menyimpan surat masuk...', '');
+      if (file) {
+        tombol.textContent = 'Mengunggah berkas...';
+        tampilkanPesan(pesan, 'Mengunggah berkas "' + file.name + '" ke Google Drive...', '');
 
-      google.script.run
-        .withSuccessHandler(function(hasil) {
-          tampilkanPesan(
-            pesan,
-            hasil.pesan + ' ID agenda: ' + hasil.id,
-            'success'
-          );
-
-          batalEditSuratMasuk();
-          tombol.disabled = false;
-
-          muatSuratMasuk();
-          muatDashboard();
-        })
-        .withFailureHandler(function(error) {
-          tampilkanPesan(
-            pesan,
-            'Gagal menyimpan surat masuk: ' + error.message,
-            'error'
-          );
-
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          data.berkasBase64 = e.target.result;
+          data.berkasNama = file.name;
+          data.berkasType = file.type;
+          tombol.textContent = sedangEdit ? 'Memperbarui...' : 'Menyimpan...';
+          tampilkanPesan(pesan, sedangEdit ? 'Memperbarui surat masuk...' : 'Menyimpan surat masuk...', '');
+          kirimData(data);
+        };
+        reader.onerror = function() {
+          tampilkanPesan(pesan, 'Gagal membaca berkas yang dipilih.', 'error');
           tombol.disabled = false;
           tombol.textContent = sedangEdit ? 'Perbarui Surat Masuk' : 'Simpan Surat Masuk';
-        })
-        .simpanSuratMasuk(data);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        tombol.textContent = sedangEdit ? 'Memperbarui...' : 'Menyimpan...';
+        tampilkanPesan(pesan, sedangEdit ? 'Memperbarui surat masuk...' : 'Menyimpan surat masuk...', '');
+        kirimData(data);
+      }
     });
 
   function mulaiEditSuratMasuk(id) {
@@ -1851,6 +2105,9 @@
         form.linkDokumen.value = surat.linkDokumen || '';
         form.keterangan.value = surat.keterangan || '';
 
+        var fileInput = document.getElementById('berkasMasukFile');
+        if (fileInput) fileInput.value = '';
+
         var indikator = document.getElementById('indikatorModeMasuk');
         if (indikator) {
           indikator.textContent = 'Mode Edit: ' + surat.id;
@@ -1875,6 +2132,8 @@
     var form = document.getElementById('formMasuk');
     form.reset();
     document.getElementById('idSuratMasuk').value = '';
+    var fileInput = document.getElementById('berkasMasukFile');
+    if (fileInput) fileInput.value = '';
     var indikator = document.getElementById('indikatorModeMasuk');
     if (indikator) indikator.style.display = 'none';
     var btnBatal = document.getElementById('btnBatalEditMasuk');
@@ -2067,11 +2326,218 @@
     namaSekolah: 'SMP Negeri 13 Tasikmalaya',
     alamat: '',
     telepon: '',
-    kota: '',
+    kota: 'Tasikmalaya',
     namaKepala: '',
-    jabatanKepala: '',
-    nipKepala: ''
+    jabatanKepala: 'Kepala Sekolah',
+    nipKepala: '',
+    namaBendahara: '',
+    jabatanBendahara: 'Bendahara',
+    nipBendahara: '',
+    namaPetugas: '',
+    jabatanPetugas: 'Pengadministrasi Persuratan',
+    nipPetugas: ''
   };
+
+  var masterPejabatData = {
+    kop: {
+      namaSekolah: 'SMP Negeri 13 Tasikmalaya',
+      alamat: '',
+      telepon: '',
+      kota: 'Tasikmalaya'
+    },
+    kepalaSekolah: { nama: '', nip: '', jabatan: 'Kepala Sekolah' },
+    bendahara: { nama: '', nip: '', jabatan: 'Bendahara' },
+    petugas: { nama: '', nip: '', jabatan: 'Pengadministrasi Persuratan' }
+  };
+
+  function terapkanKopDanTtdArsip() {
+    var elNama = document.getElementById('cetakKopNama');
+    var elAlamat = document.getElementById('cetakKopAlamat');
+    var elTelepon = document.getElementById('cetakKopTelepon');
+
+    if (elNama) elNama.textContent = pengaturanKop.namaSekolah || 'SMP NEGERI 13 TASIKMALAYA';
+    if (elAlamat) elAlamat.textContent = pengaturanKop.alamat || '';
+    if (elTelepon) elTelepon.textContent = pengaturanKop.telepon ? ('Kontak / Telepon: ' + pengaturanKop.telepon) : '';
+
+    // TTD Kepala Sekolah
+    var elJabKepala = document.getElementById('ttdJabatanKepalaArsip');
+    var elNamaKepala = document.getElementById('ttdNamaKepalaArsip');
+    var elNipKepala = document.getElementById('ttdNipKepalaArsip');
+
+    if (elJabKepala) elJabKepala.textContent = pengaturanKop.jabatanKepala || 'Kepala Sekolah';
+    if (elNamaKepala) elNamaKepala.textContent = pengaturanKop.namaKepala ? pengaturanKop.namaKepala : '( ............................................ )';
+    if (elNipKepala) elNipKepala.textContent = pengaturanKop.nipKepala ? ('NIP. ' + pengaturanKop.nipKepala) : 'NIP. ........................................';
+
+    // TTD Petugas
+    var elKotaTgl = document.getElementById('ttdKotaTanggalArsip');
+    var elJabPetugas = document.getElementById('ttdJabatanPetugasArsip');
+    var elNamaPetugas = document.getElementById('ttdNamaPetugasArsip');
+    var elNipPetugas = document.getElementById('ttdNipPetugasArsip');
+
+    var kota = pengaturanKop.kota || 'Tasikmalaya';
+    var hariIni = new Date();
+    var hariIniISO = [
+      hariIni.getFullYear(),
+      String(hariIni.getMonth() + 1).padStart(2, '0'),
+      String(hariIni.getDate()).padStart(2, '0')
+    ].join('-');
+    var tglTeks = formatTanggalSurat(hariIniISO) || hariIni.toLocaleDateString('id-ID');
+
+    if (elKotaTgl) elKotaTgl.textContent = kota + ', ' + tglTeks;
+    if (elJabPetugas) elJabPetugas.textContent = pengaturanKop.jabatanPetugas || 'Pengadministrasi Persuratan';
+    if (elNamaPetugas) elNamaPetugas.textContent = pengaturanKop.namaPetugas ? pengaturanKop.namaPetugas : '( ............................................ )';
+    if (elNipPetugas) elNipPetugas.textContent = pengaturanKop.nipPetugas ? ('NIP. ' + pengaturanKop.nipPetugas) : 'NIP. ........................................';
+  }
+
+  function muatMasterPejabat(manual) {
+    var pesan = document.getElementById('pesanMasterPejabat');
+    if (manual && pesan) {
+      tampilkanPesan(pesan, 'Memuat data master pejabat dari Spreadsheet...', '');
+    }
+
+    google.script.run
+      .withSuccessHandler(function(data) {
+        if (!data) return;
+        masterPejabatData = data;
+
+        if (data.kop) {
+          pengaturanKop.namaSekolah = data.kop.namaSekolah || pengaturanKop.namaSekolah;
+          pengaturanKop.alamat = data.kop.alamat || '';
+          pengaturanKop.telepon = data.kop.telepon || '';
+          pengaturanKop.kota = data.kop.kota || 'Tasikmalaya';
+        }
+        if (data.kepalaSekolah) {
+          pengaturanKop.namaKepala = data.kepalaSekolah.nama || '';
+          pengaturanKop.nipKepala = data.kepalaSekolah.nip || '';
+          pengaturanKop.jabatanKepala = data.kepalaSekolah.jabatan || 'Kepala Sekolah';
+        }
+        if (data.bendahara) {
+          pengaturanKop.namaBendahara = data.bendahara.nama || '';
+          pengaturanKop.nipBendahara = data.bendahara.nip || '';
+          pengaturanKop.jabatanBendahara = data.bendahara.jabatan || 'Bendahara';
+        }
+        if (data.petugas) {
+          pengaturanKop.namaPetugas = data.petugas.nama || '';
+          pengaturanKop.nipPetugas = data.petugas.nip || '';
+          pengaturanKop.jabatanPetugas = data.petugas.jabatan || 'Pengadministrasi Persuratan';
+        }
+
+        if (document.getElementById('masterKopNama')) {
+          document.getElementById('masterKopNama').value = pengaturanKop.namaSekolah;
+          document.getElementById('masterKopAlamat').value = pengaturanKop.alamat;
+          document.getElementById('masterKopTelepon').value = pengaturanKop.telepon;
+          document.getElementById('masterKopKota').value = pengaturanKop.kota;
+
+          document.getElementById('masterKepalaNama').value = pengaturanKop.namaKepala;
+          document.getElementById('masterKepalaNip').value = pengaturanKop.nipKepala;
+          document.getElementById('masterKepalaJabatan').value = pengaturanKop.jabatanKepala;
+
+          document.getElementById('masterBendaharaNama').value = pengaturanKop.namaBendahara;
+          document.getElementById('masterBendaharaNip').value = pengaturanKop.nipBendahara;
+          document.getElementById('masterBendaharaJabatan').value = pengaturanKop.jabatanBendahara;
+
+          document.getElementById('masterPetugasNama').value = pengaturanKop.namaPetugas;
+          document.getElementById('masterPetugasNip').value = pengaturanKop.nipPetugas;
+          document.getElementById('masterPetugasJabatan').value = pengaturanKop.jabatanPetugas;
+        }
+
+        isiKopSurat();
+        terapkanKopDanTtdArsip();
+        perbaruiPratinjauSurat();
+
+        if (manual && pesan) {
+          tampilkanPesan(pesan, 'Data master pejabat dan kop surat berhasil dimuat dari Spreadsheet.', 'success');
+        }
+      })
+      .withFailureHandler(function(err) {
+        if (manual && pesan) {
+          tampilkanPesan(pesan, 'Gagal memuat dari Spreadsheet: ' + err.message, 'error');
+        }
+      })
+      .ambilMasterPejabat();
+  }
+
+  function simpanMasterPejabatKlien() {
+    var tombol = document.getElementById('btnSimpanMasterPejabat');
+    var pesan = document.getElementById('pesanMasterPejabat');
+
+    var payload = {
+      kop: {
+        namaSekolah: (document.getElementById('masterKopNama') ? document.getElementById('masterKopNama').value.trim() : ''),
+        alamat: (document.getElementById('masterKopAlamat') ? document.getElementById('masterKopAlamat').value.trim() : ''),
+        telepon: (document.getElementById('masterKopTelepon') ? document.getElementById('masterKopTelepon').value.trim() : ''),
+        kota: (document.getElementById('masterKopKota') ? document.getElementById('masterKopKota').value.trim() : 'Tasikmalaya')
+      },
+      kepalaSekolah: {
+        nama: (document.getElementById('masterKepalaNama') ? document.getElementById('masterKepalaNama').value.trim() : ''),
+        nip: (document.getElementById('masterKepalaNip') ? document.getElementById('masterKepalaNip').value.trim() : ''),
+        jabatan: (document.getElementById('masterKepalaJabatan') ? document.getElementById('masterKepalaJabatan').value.trim() : 'Kepala Sekolah') || 'Kepala Sekolah'
+      },
+      bendahara: {
+        nama: (document.getElementById('masterBendaharaNama') ? document.getElementById('masterBendaharaNama').value.trim() : ''),
+        nip: (document.getElementById('masterBendaharaNip') ? document.getElementById('masterBendaharaNip').value.trim() : ''),
+        jabatan: (document.getElementById('masterBendaharaJabatan') ? document.getElementById('masterBendaharaJabatan').value.trim() : 'Bendahara') || 'Bendahara'
+      },
+      petugas: {
+        nama: (document.getElementById('masterPetugasNama') ? document.getElementById('masterPetugasNama').value.trim() : ''),
+        nip: (document.getElementById('masterPetugasNip') ? document.getElementById('masterPetugasNip').value.trim() : ''),
+        jabatan: (document.getElementById('masterPetugasJabatan') ? document.getElementById('masterPetugasJabatan').value.trim() : 'Pengadministrasi Persuratan') || 'Pengadministrasi Persuratan'
+      }
+    };
+
+    if (!payload.kop.namaSekolah || !payload.kepalaSekolah.nama || !payload.petugas.nama) {
+      tampilkanPesan(pesan, 'Nama Sekolah, Nama Kepala Sekolah, dan Nama Petugas wajib diisi.', 'error');
+      return;
+    }
+
+    tombol.disabled = true;
+    tombol.textContent = 'Menyimpan ke Spreadsheet...';
+    tampilkanPesan(pesan, 'Menyimpan data master pejabat ke Spreadsheet...', '');
+
+    google.script.run
+      .withSuccessHandler(function(hasil) {
+        tombol.disabled = false;
+        tombol.textContent = '💾 Simpan Master Data ke Spreadsheet';
+        tampilkanPesan(pesan, hasil.pesan, 'success');
+        muatMasterPejabat(false);
+      })
+      .withFailureHandler(function(err) {
+        tombol.disabled = false;
+        tombol.textContent = '💾 Simpan Master Data ke Spreadsheet';
+        tampilkanPesan(pesan, 'Gagal menyimpan: ' + err.message, 'error');
+      })
+      .simpanMasterPejabat(payload);
+  }
+
+  function cetakArsipSuratMasukLangsung() {
+    pilihMenuHalaman('agenda');
+    document.querySelectorAll('.menu').forEach(function(item) {
+      item.classList.toggle('active', item.dataset.page === 'agenda');
+    });
+    document.getElementById('filterJenis').value = 'MASUK';
+    document.getElementById('filterMulai').value = '';
+    document.getElementById('filterSelesai').value = '';
+    document.getElementById('filterKataKunci').value = '';
+    muatDataLaporan();
+    setTimeout(function() {
+      cetakLaporan();
+    }, 1200);
+  }
+
+  function cetakArsipSuratKeluarLangsung() {
+    pilihMenuHalaman('agenda');
+    document.querySelectorAll('.menu').forEach(function(item) {
+      item.classList.toggle('active', item.dataset.page === 'agenda');
+    });
+    document.getElementById('filterJenis').value = 'KELUAR';
+    document.getElementById('filterMulai').value = '';
+    document.getElementById('filterSelesai').value = '';
+    document.getElementById('filterKataKunci').value = '';
+    muatDataLaporan();
+    setTimeout(function() {
+      cetakLaporan();
+    }, 1200);
+  }
 
   var jenisSuratSiap = false;
 
@@ -2518,6 +2984,7 @@
           pihak: surat.asalSurat,
           perihal: surat.perihal,
           status: surat.status,
+          linkDokumen: surat.linkDokumen,
           id: surat.id
         });
       });
@@ -2700,6 +3167,19 @@
     document.getElementById('cetakPeriode').textContent =
       'Periode: ' + labelTanggal + ' | Jenis: ' + labelJenis;
 
+    var judulArsipEl = document.getElementById('judulRekapArsip');
+    if (judulArsipEl) {
+      judulArsipEl.textContent = jenis === 'MASUK'
+        ? 'REKAPITULASI ARSIP SURAT MASUK'
+        : jenis === 'KELUAR'
+          ? 'REKAPITULASI ARSIP SURAT KELUAR'
+          : jenis === 'TUGAS'
+            ? 'REKAPITULASI ARSIP SURAT TUGAS'
+            : 'REKAPITULASI AGENDA SURAT';
+    }
+
+    terapkanKopDanTtdArsip();
+
     document.getElementById('waktuLaporan').textContent =
       'Dicetak pada: ' + new Date().toLocaleString('id-ID');
   }
@@ -2756,6 +3236,33 @@
           konfirmasiHapusSuratKeluar(item.id, item.nomor);
         });
         tdAksi.appendChild(btnHapusAgenda);
+      } else if (item.jenis === 'Surat Masuk' && item.id) {
+        tdAksi.style.whiteSpace = 'nowrap';
+        if (item.linkDokumen) {
+          var linkDoc = document.createElement('a');
+          linkDoc.href = item.linkDokumen;
+          linkDoc.target = '_blank';
+          linkDoc.rel = 'noopener noreferrer';
+          linkDoc.className = 'btn small';
+          linkDoc.style.background = '#0284c7';
+          linkDoc.style.color = '#fff';
+          linkDoc.style.textDecoration = 'none';
+          linkDoc.style.marginRight = '5px';
+          linkDoc.textContent = '📄 Berkas';
+          tdAksi.appendChild(linkDoc);
+        }
+        var btnEditSM = document.createElement('button');
+        btnEditSM.type = 'button';
+        btnEditSM.className = 'btn small';
+        btnEditSM.textContent = 'Edit';
+        btnEditSM.addEventListener('click', function() {
+          pilihMenuHalaman('suratMasuk');
+          document.querySelectorAll('.menu').forEach(function(itemMenu) {
+            itemMenu.classList.toggle('active', itemMenu.dataset.page === 'suratMasuk');
+          });
+          mulaiEditSuratMasuk(item.id);
+        });
+        tdAksi.appendChild(btnEditSM);
       } else {
         tdAksi.textContent = '-';
       }
@@ -3839,7 +4346,17 @@
     return hasil;
   }
 
+  // Listener submit form master data pejabat
+  var formMasterEl = document.getElementById('formMasterPejabat');
+  if (formMasterEl) {
+    formMasterEl.addEventListener('submit', function(e) {
+      e.preventDefault();
+      simpanMasterPejabatKlien();
+    });
+  }
+
   muatDashboard();
+  muatMasterPejabat(false);
 </script>
 
 </body>
