@@ -181,6 +181,11 @@ th { color: #84918a; font-size: 9px; font-weight: 700; letter-spacing: .07em; te
 .record-dialog::backdrop { background: #14251f85; backdrop-filter: blur(2px); }
 .dialog-frame { display: flex; max-height: min(92vh, 900px); flex-direction: column; }
 .print-dialog { width: min(620px, calc(100% - 28px)); }
+.attachment-preview-dialog { width: min(1000px, calc(100% - 28px)); height: min(92vh, 900px); }
+.attachment-preview-body { display: flex; min-height: 0; flex: 1; flex-direction: column; align-items: center; gap: 14px; overflow: auto; background: #eef2ee; padding: 14px; }
+.attachment-preview-body canvas { display: block; max-width: 100%; height: auto; background: #fff; box-shadow: 0 2px 8px #20352e18; }
+.attachment-preview-body img { display: block; max-width: 100%; max-height: 75vh; object-fit: contain; background: #fff; }
+.attachment-preview-message { max-width: 440px; color: #6d7a72; font-size: 13px; line-height: 1.6; text-align: center; }
 .print-options { display: grid; overflow-y: auto; padding: 7px 24px 20px; }
 .print-option { display: grid; grid-template-columns: 34px minmax(0, 1fr) 24px; align-items: center; gap: 12px; min-height: 62px; border: 0; border-bottom: 1px solid var(--line); background: #fff; padding: 8px 5px; text-align: left; cursor: pointer; }
 .print-option:hover { background: #f7faf6; }
@@ -210,7 +215,8 @@ th { color: #84918a; font-size: 9px; font-weight: 700; letter-spacing: .07em; te
 .button-add-row { min-height: 31px; padding: 0 9px; font-size: 10px; }
 .assignment-labels, .assignment-row { display: grid; align-items: center; gap: 7px; }
 .teacher-labels, .teacher-row { grid-template-columns: 25px minmax(110px, 1.2fr) minmax(80px, .75fr) minmax(90px, .85fr) 92px 27px; }
-.student-labels, .student-row { grid-template-columns: 25px minmax(120px, 1.5fr) minmax(70px, .7fr) 92px 27px; }
+.student-labels { grid-template-columns: 25px minmax(120px, 1.5fr) minmax(70px, .7fr) 92px 27px; }
+.student-row { grid-template-columns: 25px minmax(130px, 1.4fr) minmax(120px, 1fr) minmax(70px, .7fr) 92px 27px; }
 .assignment-labels { min-height: 27px; color: #89968e; font-size: 8px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
 .assignment-labels span:first-child, .assignment-row .assignment-index { text-align: center; }
 .assignment-row { min-height: 44px; border-top: 1px solid #edf0ed; }
@@ -296,6 +302,8 @@ th { color: #84918a; font-size: 9px; font-weight: 700; letter-spacing: .07em; te
   .teacher-row, .student-row { grid-template-columns: 24px minmax(0, 1fr) minmax(0, 1fr) 29px; gap: 6px; padding: 7px 0; }
   .assignment-index { grid-column: 1; grid-row: 1; align-self: start; padding-top: 10px; }
   .assignment-row select { grid-column: 2 / -1; grid-row: 1; }
+  .student-row [data-student-search] { grid-column: 2 / -1; grid-row: 1; }
+  .student-row select { grid-column: 2 / 4; grid-row: 2; }
   .teacher-row [data-rank-value], .student-row [data-class-value] { grid-column: 2; grid-row: 2; }
   .teacher-row [data-position-value] { grid-column: 3; grid-row: 2; }
   .assignment-row [data-rate-value] { grid-column: 2 / 4; grid-row: 3; }

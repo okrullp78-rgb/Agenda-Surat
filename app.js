@@ -15,7 +15,7 @@ const API_TIMEOUT_MS = 8000;
 
 const STORAGE_KEY = 'smpn13.agenda-surat.v1';
 const CURRENT_YEAR = new Date().getFullYear();
-const PAGE_LABELS = { overview: 'Ringkasan', archive: 'Arsip surat tugas', agenda: 'Agenda surat', settings: 'Pengaturan & data' };
+const PAGE_LABELS = { overview: 'Dashboard', archive: 'Arsip Surat Tugas', agenda: 'Agenda Surat', settings: 'Pengaturan & data' };
 const defaultState = {
   tasks: [],
   incoming: [],
@@ -741,13 +741,20 @@ function renderArchive() {
     <td>${escapeHtml(task.number)}</td><td>${escapeHtml(formatDate(task.issuedDate))}</td>
     <td><span class="row-main">${escapeHtml(task.subject || 'Tanpa perihal')}</span><span class="row-sub">Dasar: ${escapeHtml(task.basis || '—')}</span></td>
     <td>${escapeHtml(assigneeNames(task.assignees) || '—')}</td><td><span class="row-main">${escapeHtml(task.eventName || '—')}</span><span class="row-sub">${escapeHtml(task.place || task.recipient || '—')}</span></td>
-    <td class="action-cell"><span class="archive-actions"><button class="icon-button" data-action="edit-task" data-id="${escapeHtml(task.id)}" aria-label="Edit arsip ${escapeHtml(task.number)}" title="Edit arsip">✎</button><button class="icon-button" data-action="download-task" data-id="${escapeHtml(task.id)}" aria-label="Unduh data arsip ${escapeHtml(task.number)}" title="Unduh data arsip">↓</button><button class="icon-button" data-action="print-options" data-id="${escapeHtml(task.id)}" aria-label="Pilih dokumen cetak ${escapeHtml(task.number)}" title="Pilih dokumen cetak">▤</button></span></td>
+    <td class="action-cell"><span class="archive-actions"><button type="button" class="icon-button" data-action="edit-task" data-id="${escapeHtml(task.id)}" aria-label="Edit arsip ${escapeHtml(task.number)}" title="Edit arsip">✎</button><button type="button" class="icon-button" data-action="download-task" data-id="${escapeHtml(task.id)}" aria-label="Unduh data arsip ${escapeHtml(task.number)}" title="Unduh data arsip">↓</button><button type="button" class="icon-button" data-action="print-options" data-id="${escapeHtml(task.id)}" aria-label="Pilih dokumen cetak ${escapeHtml(task.number)}" title="Pilih dokumen cetak">▤</button><button type="button" class="icon-button" data-action="delete-task" data-id="${escapeHtml(task.id)}" aria-label="Hapus arsip ${escapeHtml(task.number)}" title="Hapus arsip">×</button></span></td>
   </tr>`).join('');
   document.getElementById('archive-empty').classList.toggle('is-visible', matches.length === 0);
   document.querySelector('#page-archive .data-table').style.display = matches.length ? '' : 'none';
 }
 
 function renderAgenda() {
+  const monthSelect = document.getElementById('agenda-month');
+  const previousMonth = monthSelect.value;
+  const monthDates = [...state.incoming.map((entry) => entry.receivedDate), ...state.tasks.map((task) => task.issuedDate), ...state.outgoing.map((entry) => entry.issuedDate)].filter(Boolean);
+  const months = [...new Set(monthDates.map((date) => date.slice(5, 7)))].sort();
+  const monthFormatter = new Intl.DateTimeFormat('id-ID', { month: 'long', timeZone: 'UTC' });
+  monthSelect.innerHTML = '<option value="all">Semua bulan</option>' + months.map((month) => `<option value="${month}">${monthFormatter.format(new Date(`2020-${month}-01T00:00:00Z`))}</option>`).join('');
+  monthSelect.value = months.includes(previousMonth) ? previousMonth : 'all';
   const isIncoming = activeAgendaTab === 'incoming';
   document.querySelectorAll('[data-agenda-tab]').forEach((button) => {
     const selected = button.dataset.agendaTab === activeAgendaTab;
@@ -756,27 +763,32 @@ function renderAgenda() {
   });
   document.getElementById('print-incoming-button').hidden = !isIncoming;
   document.getElementById('print-outgoing-button').hidden = isIncoming;
-  document.getElementById('print-task-button').hidden = isIncoming;
   const addButton = document.getElementById('agenda-add-button');
   addButton.dataset.action = isIncoming ? 'new-incoming' : 'new-outgoing';
   addButton.innerHTML = `<span class="button-plus">+</span> ${isIncoming ? 'Catat surat masuk' : 'Catat surat keluar'}`;
   document.getElementById('incoming-tab-count').textContent = state.incoming.length;
   document.getElementById('outgoing-tab-count').textContent = state.tasks.length + state.outgoing.length;
   const query = document.getElementById('agenda-search').value.trim().toLowerCase();
+  const selectedMonth = monthSelect.value;
+  const sortOrder = document.getElementById('agenda-sort').value;
   const outgoingRows = [
     ...state.tasks.map((task) => ({ ...task, recordType: 'task', letterNumber: task.number, issuedDate: task.issuedDate, recipient: task.recipient, activity: task.eventName || 'Surat Tugas' })),
     ...state.outgoing.map((entry) => ({ ...entry, recordType: 'outgoing', letterNumber: entry.number, activity: entry.letterType || 'Surat keluar' })),
   ];
   const rows = isIncoming ? state.incoming : outgoingRows;
-  const filtered = rows.filter((entry) => [entry.letterNumber, entry.subject, entry.sender, entry.recipient, entry.disposition, entry.number, entry.letterType].join(' ').toLowerCase().includes(query))
-    .sort((first, second) => ((isIncoming ? second.receivedDate : second.issuedDate) || '').localeCompare((isIncoming ? first.receivedDate : first.issuedDate) || ''));
+  const filtered = rows.filter((entry) => [entry.letterNumber, entry.subject, entry.sender, entry.recipient, entry.disposition, entry.number, entry.letterType].join(' ').toLowerCase().includes(query)
+    && (selectedMonth === 'all' || ((isIncoming ? entry.receivedDate : entry.issuedDate) || '').slice(5, 7) === selectedMonth))
+    .sort((first, second) => {
+      const comparison = ((isIncoming ? first.receivedDate : first.issuedDate) || '').localeCompare((isIncoming ? second.receivedDate : second.issuedDate) || '');
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
   const head = isIncoming
-    ? '<tr><th>Tanggal terima</th><th>Nomor surat</th><th>Tanggal surat</th><th>Pengirim</th><th>Perihal</th><th>Disposisi</th><th>Berkas</th></tr>'
-    : '<tr><th>Tanggal keluar</th><th>Nomor surat</th><th>Jenis surat</th><th>Tujuan</th><th>Perihal</th><th class="action-column">Aksi</th></tr>';
+    ? '<tr><th>Tanggal terima</th><th>Nomor surat</th><th>Tanggal surat</th><th>Pengirim</th><th>Perihal</th><th>Disposisi</th><th>Berkas</th><th class="action-column">Aksi</th></tr>'
+    : '<tr><th>Tanggal keluar</th><th>Nomor surat</th><th>Jenis surat</th><th>Tujuan</th><th>Perihal</th><th>Berkas</th><th class="action-column">Aksi</th></tr>';
   document.getElementById('agenda-head').innerHTML = head;
   document.getElementById('agenda-rows').innerHTML = filtered.map((entry) => isIncoming
-    ? `<tr><td>${escapeHtml(formatDate(entry.receivedDate))}</td><td>${escapeHtml(entry.letterNumber || '—')}</td><td>${escapeHtml(formatDate(entry.letterDate))}</td><td>${escapeHtml(entry.sender || '—')}</td><td>${escapeHtml(entry.subject || '—')}</td><td>${escapeHtml(entry.disposition || '—')}</td><td>${entry.attachment?.startsWith('{') ? `<button class="icon-button" data-action="open-incoming-file" data-id="${escapeHtml(entry.id)}" title="Buka berkas">↗</button>` : '—'}</td></tr>`
-    : `<tr><td>${escapeHtml(formatDate(entry.issuedDate))}</td><td>${escapeHtml(entry.number || '—')}</td><td>${escapeHtml(entry.activity || entry.letterType || 'Surat Tugas')}</td><td>${escapeHtml(entry.recipient || '—')}</td><td>${escapeHtml(entry.subject || '—')}</td><td class="action-cell">${entry.recordType === 'task' ? `<button class="icon-button" data-action="print-options" data-id="${escapeHtml(entry.id)}" aria-label="Pilih dokumen cetak" title="Pilih dokumen cetak">▤</button>` : `<button class="icon-button" data-action="edit-outgoing" data-id="${escapeHtml(entry.id)}" aria-label="Edit surat keluar" title="Edit surat keluar">✎</button>`}</td></tr>`).join('');
+    ? `<tr><td>${escapeHtml(formatDate(entry.receivedDate))}</td><td>${escapeHtml(entry.letterNumber || '—')}</td><td>${escapeHtml(formatDate(entry.letterDate))}</td><td>${escapeHtml(entry.sender || '—')}</td><td>${escapeHtml(entry.subject || '—')}</td><td>${escapeHtml(entry.disposition || '—')}</td><td>${entry.attachment?.startsWith('{') ? `<button type="button" class="icon-button" data-action="open-incoming-file" data-id="${escapeHtml(entry.id)}" aria-label="Lihat berkas surat masuk" title="Lihat berkas">↗</button>` : '—'}</td><td class="action-cell"><span class="archive-actions"><button type="button" class="icon-button" data-action="edit-incoming" data-id="${escapeHtml(entry.id)}" aria-label="Edit surat masuk" title="Edit surat masuk">✎</button><button type="button" class="icon-button" data-action="delete-incoming" data-id="${escapeHtml(entry.id)}" aria-label="Hapus surat masuk" title="Hapus surat masuk">×</button></span></td></tr>`
+    : `<tr><td>${escapeHtml(formatDate(entry.issuedDate))}</td><td>${escapeHtml(entry.number || '—')}</td><td>${escapeHtml(entry.activity || entry.letterType || 'Surat Tugas')}</td><td>${escapeHtml(entry.recipient || '—')}</td><td>${escapeHtml(entry.subject || '—')}</td><td>${entry.attachment?.startsWith('{') ? `<button type="button" class="icon-button" data-action="open-outgoing-file" data-id="${escapeHtml(entry.id)}" aria-label="Lihat berkas surat keluar" title="Lihat berkas">↗</button>` : '—'}</td><td class="action-cell"><span class="archive-actions">${entry.recordType === 'task' ? `<button type="button" class="icon-button" data-action="print-options" data-id="${escapeHtml(entry.id)}" aria-label="Pilih dokumen cetak" title="Pilih dokumen cetak">▤</button><button type="button" class="icon-button" data-action="delete-task" data-id="${escapeHtml(entry.id)}" aria-label="Hapus surat tugas ${escapeHtml(entry.number || '')}" title="Hapus surat tugas">×</button>` : `<button type="button" class="icon-button" data-action="edit-outgoing" data-id="${escapeHtml(entry.id)}" aria-label="Edit surat keluar" title="Edit surat keluar">✎</button><button type="button" class="icon-button" data-action="delete-outgoing" data-id="${escapeHtml(entry.id)}" aria-label="Hapus surat keluar" title="Hapus surat keluar">×</button>`}</span></td></tr>`).join('');
   document.getElementById('agenda-empty').classList.toggle('is-visible', filtered.length === 0);
   document.querySelector('#page-agenda .data-table').style.display = filtered.length ? '' : 'none';
   document.getElementById('agenda-empty-title').textContent = isIncoming ? 'Belum ada surat masuk' : 'Belum ada surat keluar';
@@ -831,7 +843,7 @@ function renderAssignmentRows(type, assignments = [{}]) {
   };
   document.getElementById(containerId).innerHTML = assignments.map((assignment, index) => isTeacher
     ? `<div class="assignment-row teacher-row" data-assignment-row="teachers"><span class="assignment-index">${index + 1}</span><select data-person-select required aria-label="Nama petugas"><option value="">${records.length ? 'Pilih petugas' : 'Unggah data guru dahulu'}</option>${options}${extraOption(assignment)}</select><output data-rank-value>${escapeHtml(assignment.rank || '—')}</output><output data-position-value>${escapeHtml(assignment.position || '—')}</output><input data-rate-value type="number" min="0" step="1" value="${escapeHtml(assignment.rate ?? '')}" placeholder="Tarif" required aria-label="Tarif petugas per hari"><button type="button" class="icon-button assignment-remove" data-remove-assignment="teachers" aria-label="Hapus petugas ${index + 1}" title="Hapus petugas" ${assignments.length === 1 ? 'disabled' : ''}>×</button></div>`
-    : `<div class="assignment-row student-row" data-assignment-row="students"><span class="assignment-index">${index + 1}</span><select data-person-select aria-label="Nama siswa"><option value="">${records.length ? 'Pilih siswa' : 'Unggah data siswa dahulu'}</option>${options}${extraOption(assignment)}</select><output data-class-value>${escapeHtml(assignment.class || '—')}</output><input data-rate-value type="number" min="0" step="1" value="${escapeHtml(assignment.rate ?? '')}" placeholder="Tarif" aria-label="Tarif siswa per hari"><button type="button" class="icon-button assignment-remove" data-remove-assignment="students" aria-label="Hapus siswa ${index + 1}" title="Hapus siswa" ${assignments.length === 1 ? 'disabled' : ''}>×</button></div>`).join('');
+    : `<div class="assignment-row student-row" data-assignment-row="students"><span class="assignment-index">${index + 1}</span><input class="student-search" type="search" data-student-search placeholder="Cari nama atau kelas…" aria-label="Cari siswa berdasarkan nama atau kelas" value="${escapeHtml(assignment.name || '')}"><select data-person-select aria-label="Pilih siswa"><option value="">${records.length ? 'Pilih siswa' : 'Unggah data siswa dahulu'}</option>${options}${extraOption(assignment)}</select><output data-class-value>${escapeHtml(assignment.class || '—')}</output><input data-rate-value type="number" min="0" step="1" value="${escapeHtml(assignment.rate ?? '')}" placeholder="Tarif" aria-label="Tarif siswa per hari"><button type="button" class="icon-button assignment-remove" data-remove-assignment="students" aria-label="Hapus siswa ${index + 1}" title="Hapus siswa" ${assignments.length === 1 ? 'disabled' : ''}>×</button></div>`).join('');
   assignments.forEach((assignment, index) => {
     if (!assignment.personId) return;
     const row = document.querySelectorAll(`[data-assignment-row="${type}"]`)[index];
@@ -841,7 +853,24 @@ function renderAssignmentRows(type, assignments = [{}]) {
       updateAssignmentDetails(select);
     }
   });
+  if (!isTeacher) document.querySelectorAll('[data-assignment-row="students"] [data-student-search]').forEach(filterStudentOptions);
   if (isTeacher) syncSppdPersonOptions();
+}
+
+function filterStudentOptions(input) {
+  const row = input.closest('[data-assignment-row]');
+  const select = row?.querySelector('[data-person-select]');
+  if (!select) return;
+  const query = input.value.trim().toLocaleLowerCase('id-ID');
+  const selectedValue = select.value;
+  [...select.options].slice(1).forEach((option) => {
+    const text = `${option.dataset.name || option.textContent} ${option.dataset.class || ''}`.toLocaleLowerCase('id-ID');
+    option.hidden = Boolean(query && !text.includes(query));
+  });
+  if (selectedValue) {
+    const selectedOption = [...select.options].find((option) => option.value === selectedValue);
+    if (selectedOption) selectedOption.hidden = false;
+  }
 }
 
 function updateAssignmentDetails(select) {
@@ -856,6 +885,7 @@ function updateAssignmentDetails(select) {
   if (rank) rank.textContent = [option.dataset.grade, option.dataset.rank].filter(Boolean).join(' · ') || '—';
   if (position) position.textContent = option.dataset.position || '—';
   if (studentClass) studentClass.textContent = option.dataset.class || '—';
+  if (row.dataset.assignmentRow === 'students') row.querySelector('[data-student-search]').value = option.dataset.name || '';
   if (row.dataset.assignmentRow === 'teachers') syncSppdPersonOptions();
 }
 
@@ -907,6 +937,13 @@ function updateTripDerivedFields(changedRangeField = '') {
     if (changedRangeField === 'eventEndDate') startField.value = endField.value;
     else endField.value = startField.value;
   }
+  const dayField = field('eventDay');
+  if (dayField && startField.value && endField.value) {
+    const weekdays = new Intl.DateTimeFormat('id-ID', { weekday: 'long', timeZone: 'UTC' });
+    const startDay = weekdays.format(new Date(`${startField.value}T00:00:00Z`));
+    const endDay = weekdays.format(new Date(`${endField.value}T00:00:00Z`));
+    dayField.value = startField.value === endField.value ? startDay : `${startDay} s.d. ${endDay}`;
+  }
   const origin = field('origin');
   const destination = field('destination');
   const travelPurpose = field('travelPurpose');
@@ -948,7 +985,7 @@ function openTaskForm(taskId = '') {
     <section class="assignment-group field-full"><div class="assignment-group-heading"><div><strong>Petugas</strong><small>Nama, pangkat/golongan, dan jabatan dari master guru.</small></div><button type="button" class="button button-outline button-add-row" data-add-assignment="teachers"><span class="button-plus">+</span> Tambah petugas</button></div><div class="assignment-labels teacher-labels"><span>No</span><span>Nama</span><span>Pangkat/Gol.</span><span>Jabatan</span><span>Tarif (Rp)</span><span></span></div><div id="teacher-assignment-rows" class="assignment-rows"></div></section>
     <section class="assignment-group field-full"><div class="assignment-group-heading"><div><strong>Siswa</strong><small>Nama dan kelas dari master siswa.</small></div><button type="button" class="button button-outline button-add-row" data-add-assignment="students"><span class="button-plus">+</span> Tambah siswa</button></div><div class="assignment-labels student-labels"><span>No</span><span>Nama siswa</span><span>Kelas</span><span>Tarif (Rp)</span><span></span></div><div id="student-assignment-rows" class="assignment-rows"></div></section>
     ${fieldMarkup('Nama kegiatan', 'eventName', { placeholder: 'Nama kegiatan', full: true })}
-    ${fieldMarkup('Hari', 'eventDay', { placeholder: 'Contoh: Sabtu' })}
+    ${fieldMarkup('Hari', 'eventDay', { placeholder: 'Otomatis dari tanggal kegiatan' })}
     ${fieldMarkup('Tanggal mulai kegiatan', 'eventStartDate', { type: 'date', value: today, required: true })}
     ${fieldMarkup('Tanggal sampai kegiatan', 'eventEndDate', { type: 'date', value: today, required: true })}
     ${fieldMarkup('Waktu', 'eventTime', { placeholder: 'Contoh: 07.30 WIB' })}
@@ -996,22 +1033,28 @@ function openTaskForm(taskId = '') {
   const issuedDate = document.querySelector('#form-fields [name="issuedDate"]');
   const startDate = document.querySelector('#form-fields [name="eventStartDate"]');
   const endDate = document.querySelector('#form-fields [name="eventEndDate"]');
+  const eventDay = document.querySelector('#form-fields [name="eventDay"]');
   recipient.addEventListener('input', () => updateTripDerivedFields());
   eventName.addEventListener('input', () => updateTripDerivedFields());
   issuedDate.addEventListener('change', () => updateTripDerivedFields('issuedDate'));
   startDate.addEventListener('input', () => { startDate.dataset.touched = 'true'; updateTripDerivedFields('eventStartDate'); });
   endDate.addEventListener('input', () => { endDate.dataset.touched = 'true'; updateTripDerivedFields('eventEndDate'); });
+  startDate.addEventListener('change', () => updateTripDerivedFields('eventStartDate'));
+  endDate.addEventListener('change', () => updateTripDerivedFields('eventEndDate'));
   updateTripDerivedFields();
   if (existingTask?.sppdPerson) document.getElementById('sppd-person-select').value = existingTask.sppdPerson;
   dialog.showModal();
 }
 
-function openIncomingForm() {
+function openIncomingForm(incomingId = '') {
   const dialog = document.getElementById('record-dialog');
-  document.getElementById('dialog-eyebrow').textContent = 'AGENDA MASUK';
-  document.getElementById('dialog-title').textContent = 'Catat surat masuk';
-  document.getElementById('dialog-footnote').textContent = 'Catatan akan masuk ke rekap agenda surat masuk.';
-  document.getElementById('record-form').dataset.kind = 'incoming';
+  const form = document.getElementById('record-form');
+  const existing = state.incoming.find((entry) => entry.id === incomingId);
+  document.getElementById('dialog-eyebrow').textContent = existing ? 'KOREKSI AGENDA MASUK' : 'AGENDA MASUK';
+  document.getElementById('dialog-title').textContent = existing ? 'Edit surat masuk' : 'Catat surat masuk';
+  document.getElementById('dialog-footnote').textContent = existing ? 'Perubahan akan memperbarui catatan surat masuk ini.' : 'Catatan akan masuk ke rekap agenda surat masuk.';
+  form.dataset.kind = 'incoming';
+  form.dataset.editId = existing?.id || '';
   document.getElementById('form-fields').innerHTML = `<div class="form-grid">
     <div class="form-section-title">Data surat diterima</div>
     ${fieldMarkup('Tanggal diterima', 'receivedDate', { type: 'date', value: localDateValue(), required: true })}
@@ -1021,8 +1064,14 @@ function openIncomingForm() {
     ${fieldMarkup('Perihal', 'subject', { placeholder: 'Ringkasan perihal surat', required: true, full: true })}
     ${fieldMarkup('Disposisi / tindak lanjut', 'disposition', { type: 'textarea', placeholder: 'Arahan atau tindak lanjut', full: true })}
     ${fieldMarkup('Lampiran', 'attachment', { placeholder: 'Contoh: 2 berkas' })}
-    <label class="field field-full"><span>Unggah berkas surat</span><input name="incomingFile" type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"><small>PDF, gambar, atau dokumen Word (maksimal 30 KB)</small></label>
+    <label class="field field-full"><span>Unggah berkas surat</span><input name="incomingFile" type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"><small>${existing?.attachment?.startsWith('{') ? `Berkas tersimpan: ${escapeHtml(JSON.parse(existing.attachment).name || 'Lampiran lama')}. Kosongkan pilihan berkas untuk mempertahankannya.` : 'PDF, gambar, atau dokumen Word (maksimal 30 KB).'}</small></label>
   </div>`;
+  if (existing) {
+    for (const [name, value] of Object.entries(existing)) {
+      const field = form.elements.namedItem(name);
+      if (field && (value === null || typeof value !== 'object')) field.value = String(value ?? '');
+    }
+  }
   dialog.showModal();
 }
 
@@ -1050,20 +1099,49 @@ function saveTask(form) {
   };
   if (existingIndex >= 0) state.tasks[existingIndex] = task;
   else state.tasks.push(task);
+  syncTaskBasisToIncoming(task, existingTask);
   saveState();
   document.getElementById('record-dialog').close();
   showToast(existingTask ? `Perubahan surat tugas ${task.number} berhasil disimpan.` : `Surat tugas ${task.number} tersimpan di arsip dan agenda keluar.`);
+}
+
+function syncTaskBasisToIncoming(task, previousTask = null) {
+  const related = state.incoming.find((entry) => entry.sourceTaskId === task.id);
+  const hasBasis = Boolean(task.basis?.trim() || task.basisNumber?.trim() || task.basisDate);
+  if (!hasBasis) {
+    if (related) state.incoming = state.incoming.filter((entry) => entry.id !== related.id);
+    return;
+  }
+  const linked = {
+    ...(related || {}),
+    id: related?.id || crypto.randomUUID(),
+    sourceTaskId: task.id,
+    receivedDate: task.issuedDate || localDateValue(),
+    letterDate: task.basisDate || '',
+    letterNumber: task.basisNumber || '',
+    sender: task.basis || 'Dasar surat tugas',
+    subject: task.subject || '',
+    disposition: 'Dasar surat tugas (tercatat otomatis)',
+    createdAt: related?.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  if (related) Object.assign(related, linked);
+  else state.incoming.push(linked);
 }
 
 function saveIncoming(form) {
   const file = form.elements.incomingFile.files[0];
   if (file && file.size > 30 * 1024) { showToast('Ukuran berkas maksimal 30 KB agar dapat disimpan dengan aman di Spreadsheet.'); return; }
   const values = collectFormData(form); delete values.incomingFile;
+  const existingIndex = state.incoming.findIndex((entry) => entry.id === form.dataset.editId);
+  const existing = existingIndex >= 0 ? state.incoming[existingIndex] : null;
   const commit = (attachment) => {
-    const entry = { ...values, attachment: attachment || '', id: crypto.randomUUID(), createdAt: new Date().toISOString() };
-    state.incoming.push(entry); saveState(); document.getElementById('record-dialog').close(); showToast('Surat masuk tersimpan di agenda.');
+    const entry = { ...existing, ...values, attachment: attachment ?? existing?.attachment ?? '', id: existing?.id || crypto.randomUUID(), createdAt: existing?.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() };
+    if (existingIndex >= 0) state.incoming[existingIndex] = entry;
+    else state.incoming.push(entry);
+    saveState(); document.getElementById('record-dialog').close(); showToast(existing ? 'Perubahan surat masuk berhasil disimpan.' : 'Surat masuk tersimpan di agenda.');
   };
-  if (!file) return commit('');
+  if (!file) return commit(undefined);
   const reader = new FileReader(); reader.onload = () => commit(JSON.stringify({ name: file.name, type: file.type, data: reader.result })); reader.onerror = () => showToast('Berkas gagal dibaca.'); reader.readAsDataURL(file);
 }
 
@@ -1085,6 +1163,7 @@ function openOutgoingForm(outgoingId = '') {
     ${fieldMarkup('Perihal', 'subject', { placeholder: 'Perihal surat', required: true, full: true })}
     ${fieldMarkup('Keterangan', 'notes', { type: 'textarea', placeholder: 'Catatan tambahan', full: true })}
     ${fieldMarkup('Lampiran', 'attachment', { placeholder: 'Contoh: 1 berkas' })}
+    <label class="field field-full"><span>Unggah berkas surat keluar</span><input name="outgoingFile" type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"><small>${existing?.attachment?.startsWith('{') ? `Berkas tersimpan: ${escapeHtml(JSON.parse(existing.attachment).name || 'Lampiran lama')}. Kosongkan pilihan berkas untuk mempertahankannya.` : 'PDF, gambar, atau dokumen Word (maksimal 30 KB).'}</small></label>
   </div>`;
   if (existing) {
     for (const [name, value] of Object.entries(existing)) {
@@ -1096,15 +1175,21 @@ function openOutgoingForm(outgoingId = '') {
 }
 
 function saveOutgoing(form) {
-  const values = collectFormData(form);
+  const file = form.elements.outgoingFile.files[0];
+  if (file && file.size > 30 * 1024) { showToast('Ukuran berkas maksimal 30 KB agar dapat disimpan dengan aman di Spreadsheet.'); return; }
+  const values = collectFormData(form); delete values.outgoingFile;
   const existingIndex = state.outgoing.findIndex((entry) => entry.id === form.dataset.editId);
   const existing = existingIndex >= 0 ? state.outgoing[existingIndex] : null;
-  const entry = { ...existing, ...values, id: existing?.id || crypto.randomUUID(), createdAt: existing?.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() };
-  if (existingIndex >= 0) state.outgoing[existingIndex] = entry;
-  else state.outgoing.push(entry);
-  saveState();
-  document.getElementById('record-dialog').close();
-  showToast(existing ? `Surat keluar ${entry.number} diperbarui.` : `Surat keluar ${entry.number} dicatat di agenda.`);
+  const commit = (attachment) => {
+    const entry = { ...existing, ...values, attachment: attachment ?? existing?.attachment ?? '', id: existing?.id || crypto.randomUUID(), createdAt: existing?.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() };
+    if (existingIndex >= 0) state.outgoing[existingIndex] = entry;
+    else state.outgoing.push(entry);
+    saveState();
+    document.getElementById('record-dialog').close();
+    showToast(existing ? `Surat keluar ${entry.number} diperbarui.` : `Surat keluar ${entry.number} dicatat di agenda.`);
+  };
+  if (!file) return commit(undefined);
+  const reader = new FileReader(); reader.onload = () => commit(JSON.stringify({ name: file.name, type: file.type, data: reader.result })); reader.onerror = () => showToast('Berkas gagal dibaca.'); reader.readAsDataURL(file);
 }
 
 function csvValue(value) {
@@ -2384,16 +2469,31 @@ async function buildPrintDocument(taskId, type, sppdPersonId = '') {
   printWindow.document.close();
 }
 
-function printArchive(kind = 'task') {
+function printArchive(kind = 'incoming') {
   const cityLogoSrc = window.GAS_ASSETS?.cityLogo || new URL('/assets/logo-kota.jpeg', window.location.href).href;
   const schoolLogoSrc = window.GAS_ASSETS?.schoolLogo || new URL('/assets/logo-smpn13.png', window.location.href).href;
+  const outgoingRecords = [
+    ...state.outgoing.map((record) => ({
+      ...record,
+      archiveType: record.letterType || 'Surat keluar',
+      archiveNotes: record.notes || '',
+    })),
+    ...state.tasks.map((record) => ({
+      ...record,
+      number: record.number,
+      recipient: record.recipient || record.eventName || '',
+      archiveType: 'Surat Tugas',
+      archiveNotes: [record.eventName, record.place].filter(Boolean).join(' — '),
+    })),
+  ].sort((first, second) => (first.issuedDate || '').localeCompare(second.issuedDate || ''));
   const tables = [
     ['ARSIP SURAT MASUK', ['No','Tanggal Terima','Nomor Surat','Tanggal Surat','Pengirim','Perihal','Disposisi'], [...state.incoming].sort((a,b)=>(a.receivedDate||'').localeCompare(b.receivedDate||'')).map((r,i)=>[i+1,formatDate(r.receivedDate),r.letterNumber,r.letterDate?formatDate(r.letterDate):'',r.sender,r.subject,r.disposition])],
-    ['ARSIP SURAT KELUAR', ['No','Tanggal Keluar','Nomor Surat','Jenis','Tujuan','Perihal','Keterangan'], [...state.outgoing].sort((a,b)=>(a.issuedDate||'').localeCompare(b.issuedDate||'')).map((r,i)=>[i+1,formatDate(r.issuedDate),r.number,r.letterType,r.recipient,r.subject,r.notes])],
-    ['ARSIP SURAT TUGAS', ['No','Tanggal','Nomor Surat','Perihal','Penerima','Kegiatan','Tempat'], [...state.tasks].sort((a,b)=>(a.issuedDate||'').localeCompare(b.issuedDate||'')).map((r,i)=>[i+1,formatDate(r.issuedDate),r.number,r.subject,r.recipient,r.eventName,r.place])],
+    ['ARSIP SURAT KELUAR', ['No','Tanggal Keluar','Nomor Surat','Jenis','Tujuan','Perihal','Keterangan'], outgoingRecords.map((r,i)=>[i+1,formatDate(r.issuedDate),r.number,r.archiveType,r.recipient,r.subject,r.archiveNotes])],
   ];
-  const table = tables[{ incoming: 0, outgoing: 1, task: 2 }[kind] ?? 2];
+  const table = tables[kind === 'outgoing' ? 1 : 0];
   const [title, headers, rows] = table;
+  const printDate = new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
+  const dateLine = `Tasikmalaya, ${printDate}`;
   const section = `<table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map(cell=>`<td>${escapeHtml(cell || '')}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
   const officials = state.officials;
   const printWindow = window.open('', '_blank', 'width=1100,height=750');
@@ -2402,24 +2502,185 @@ function printArchive(kind = 'task') {
     return;
   }
   const archiveOfficer = state.officialsMaster.find((person) => person.role === 'Petugas') || state.officialsMaster[0] || {};
-  printWindow.document.write(`<!doctype html><html lang="id"><head><meta charset="utf-8"><title>${title}</title><style>@page{size:A4 landscape;margin:12mm}body{font:10px Arial,sans-serif;color:#111}.kop{display:grid;grid-template-columns:70px 1fr 70px;align-items:center;text-align:center;border-bottom:3px double #111;padding-bottom:8px}.kop img{width:60px;height:60px;object-fit:contain}.kop strong{display:block;font-size:14px}.kop p{margin:3px}h1{text-align:center;font-size:16px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #333;padding:4px;text-align:left;vertical-align:top}th{background:#eef2ee}.signatures{display:flex;justify-content:flex-end;gap:45px;margin:34px 8mm 0 0;text-align:center}.signature{width:190px}.space{height:55px}@media print{tr{break-inside:avoid}}</style></head><body><header class="kop"><img src="${cityLogoSrc}" alt=""><div><strong>PEMERINTAH KOTA TASIKMALAYA</strong><strong>SMP NEGERI 13 TASIKMALAYA</strong><p>Jl. Letjen H. Ibrahim Adjie Km.2 Indihiang Tasikmalaya 46151 Telp. (0265) 335695</p></div><img src="${schoolLogoSrc}" alt=""></header><h1>${title}</h1>${section}<div class="signatures"><div class="signature">Mengetahui,<br>Kepala Sekolah<div class="space"></div>${escapeHtml(officials.principalName || '')}<br>NIP. ${escapeHtml(officials.principalNip || '')}</div><div class="signature">${escapeHtml(archiveOfficer.role || 'Petugas')}<div class="space"></div>${escapeHtml(archiveOfficer.name || '')}<br>${archiveOfficer.nip ? `NIP. ${escapeHtml(archiveOfficer.nip)}` : ''}</div></div><script>window.onload=()=>window.print()<\\/script></body></html>`);
+  printWindow.document.write(`<!doctype html><html lang="id"><head><meta charset="utf-8"><title>${title}</title><style>@page{size:A4 landscape;margin:12mm}*{box-sizing:border-box}body{font:10px Arial,sans-serif;color:#111;background:#eef1ee}.kop{display:grid;grid-template-columns:70px 1fr 70px;align-items:center;text-align:center;border-bottom:3px double #111;padding-bottom:8px}.kop img{width:60px;height:60px;object-fit:contain}.kop strong{display:block;font-size:14px}.kop p{margin:3px}h1{text-align:center;font-size:16px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #333;padding:4px;text-align:left;vertical-align:top}th{background:#eef2ee}.signatures{display:flex;justify-content:space-between;align-items:flex-start;gap:45px;margin:34px 8mm 0;text-align:center}.signature{width:190px}.space{height:55px}.print-sheet{position:relative;background:#fff;box-shadow:0 2px 14px #0b1a121f;margin:0 auto 28px;padding:12mm;width:297mm;min-height:210mm}.archive-date{position:absolute;right:20mm;bottom:27mm;text-align:right}.print-toolbar{position:sticky;top:0;z-index:5;margin:0 0 18px;padding:10px 12px;border:1px solid #cbd5cd;background:#f5f8f5;color:#26352b;font:12px Arial,sans-serif}.print-toolbar-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.print-toolbar button,.print-toolbar summary{min-height:32px;border:1px solid #bcc9be;border-radius:3px;background:#fff;padding:0 11px;color:#26352b;font:600 12px Arial,sans-serif;cursor:pointer}.print-toolbar .print-now-button{background:#315f46;color:#fff}.print-toolbar details{position:relative}.print-toolbar summary{display:flex;align-items:center}.print-settings{position:absolute;top:38px;left:0;z-index:6;display:flex;gap:10px;flex-wrap:wrap;width:min(700px,calc(100vw - 32px));border:1px solid #cbd5cd;background:#fff;padding:14px;box-shadow:0 8px 24px #17281b24}.print-settings label{display:grid;gap:5px;font-size:11px}.print-settings input{width:80px}.layout-editing .layout-block{outline:1px dashed #7fae8f;cursor:move}.layout-block.is-selected{outline:2px solid #d98324!important}.layout-editing table{table-layout:fixed}.layout-editing th,.layout-editing td{overflow-wrap:anywhere}.layout-editing .layout-block table{table-layout:fixed}.layout-editing .layout-block th{cursor:col-resize}.layout-editing .layout-block tr{cursor:row-resize}.archive-layout-inspector{position:fixed;top:72px;right:16px;z-index:7;display:none;gap:10px;width:min(340px,calc(100vw - 32px));max-height:calc(100vh - 88px);overflow:auto;border:1px solid #cbd5cd;border-radius:4px;background:#fff;padding:14px;box-shadow:0 8px 24px #17281b24}.archive-layout-inspector p{margin:0;color:#506055;font-size:11px;line-height:1.5}.archive-layout-inspector strong{font-size:11px}.archive-layout-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.archive-layout-grid label{display:grid;gap:4px;color:#506055;font-size:11px}.archive-layout-grid input,.archive-layout-grid select{min-height:30px;border:1px solid #d3dcd4;border-radius:3px;padding:4px 7px;font:12px Arial,sans-serif}.archive-column-settings{display:grid;gap:7px}.archive-column-setting{display:grid;grid-template-columns:minmax(75px,1fr) 82px 62px;align-items:center;gap:6px}.archive-column-setting label{display:grid;gap:3px;color:#506055;font-size:10px}.archive-column-setting input,.archive-column-setting select{min-height:28px;min-width:0;border:1px solid #d3dcd4;border-radius:3px;padding:3px 5px;font:11px Arial,sans-serif}.print-toolbar details[open] .archive-layout-inspector{display:grid}body.layout-panel-open #print-sheet{margin-left:16px;margin-right:370px}.print-toolbar details[open] .print-settings{display:flex}@media(max-width:900px){body.layout-panel-open #print-sheet{margin:0 auto 28px}.archive-layout-inspector{position:static;width:auto;max-height:45vh;box-shadow:none}}.print-toolbar button.is-active{background:#315f46;color:#fff}@media print{body{background:#fff}.print-sheet{box-shadow:none;margin:0;width:auto!important;min-height:0!important;padding:0!important}.print-toolbar{display:none!important}}</style></head><body><div class="print-toolbar"><div class="print-toolbar-actions"><button type="button" id="archive-print-now" class="print-now-button">Cetak</button><button type="button" id="archive-edit-layout">Edit Layout</button><button type="button" id="archive-save-layout">Jadikan Default</button><button type="button" id="archive-reset-layout">Reset Layout</button><button type="button" id="archive-close-preview">Tutup pratinjau</button><details><summary>Pengaturan halaman</summary><div class="print-settings"><label>Orientasi<select id="archive-orientation"><option value="landscape" selected>Landscape</option><option value="portrait">Portrait</option></select></label><label>Margin atas (mm)<input id="archive-margin-top" type="number" value="12"></label><label>Margin kanan (mm)<input id="archive-margin-right" type="number" value="12"></label><label>Margin bawah (mm)<input id="archive-margin-bottom" type="number" value="12"></label><label>Margin kiri (mm)<input id="archive-margin-left" type="number" value="12"></label><label>Ukuran huruf (pt)<input id="archive-font-size" type="number" value="10"></label></div></details><details id="archive-layout-editor"><summary>Editor layout</summary><div class="archive-layout-inspector"><p>Pilih elemen lalu seret untuk memindahkan. Untuk tabel: tarik garis batas kolom ke kiri/kanan atau batas baris ke atas/bawah.</p><strong id="archive-selected-label">Belum ada elemen dipilih</strong><div class="archive-layout-grid"><label>Geser X (px)<input id="archive-x" type="number" step="1"></label><label>Geser Y (px)<input id="archive-y" type="number" step="1"></label><label>Lebar (px)<input id="archive-width" type="number" min="20" step="1"></label><label>Tinggi (px)<input id="archive-height" type="number" min="10" step="1"></label><label>Ukuran huruf (pt)<input id="archive-selected-font" type="number" min="6" max="48" step="0.5"></label><label>Perataan<select id="archive-align"><option value="">Default</option><option value="left">Kiri</option><option value="center">Tengah</option><option value="right">Kanan</option></select></label></div><strong>Isi tabel</strong><div class="archive-layout-grid"><label>Perataan isi<select id="archive-body-align"><option value="left">Kiri</option><option value="center">Tengah</option><option value="right">Kanan</option></select></label></div><strong>Judul tiap kolom</strong><div id="archive-column-settings" class="archive-column-settings"></div></div></details></div></div><main id="print-sheet" class="print-sheet"><header class="kop layout-block"><img src="${cityLogoSrc}" alt=""><div><strong>PEMERINTAH KOTA TASIKMALAYA</strong><strong>SMP NEGERI 13 TASIKMALAYA</strong><p>Jl. Letjen H. Ibrahim Adjie Km.2 Indihiang Tasikmalaya 46151 Telp. (0265) 335695</p></div><img src="${schoolLogoSrc}" alt=""></header><h1 class="layout-block">${title}</h1>${section.replace('<table>', '<table class="layout-block">')}<div class="signatures"><div class="signature layout-block">Mengetahui,<br>Kepala Sekolah<div class="space"></div>${escapeHtml(officials.principalName || '')}<br>NIP. ${escapeHtml(officials.principalNip || '')}</div><div class="signature layout-block">${escapeHtml(archiveOfficer.role || 'Petugas')}<div class="space"></div>${escapeHtml(archiveOfficer.name || '')}<br>${archiveOfficer.nip ? `NIP. ${escapeHtml(archiveOfficer.nip)}` : ''}</div></div><div class="archive-date layout-block">${escapeHtml(dateLine)}</div></main></body></html>`);
   printWindow.document.close();
+  const doc = printWindow.document;
+  const layoutKey = 'smpn13.agenda-surat.layout.v2';
+  const layoutName = `archive-${kind}`;
+  const getLayout = () => { try { return JSON.parse(localStorage.getItem(layoutKey)) || {}; } catch { return {}; } };
+  const blocks = () => [...doc.querySelectorAll('.layout-block')];
+  const archiveTable = doc.querySelector('#print-sheet table.layout-block');
+  const columnSettings = doc.getElementById('archive-column-settings');
+  const columnControlRows = [];
+  [...archiveTable.rows[0].cells].forEach((cell, index) => {
+    const row = doc.createElement('div'); row.className = 'archive-column-setting';
+    const title = doc.createElement('strong'); title.textContent = cell.textContent; row.appendChild(title);
+    const alignLabel = doc.createElement('label'); alignLabel.textContent = 'Rata';
+    const align = doc.createElement('select'); align.innerHTML = '<option value="">Default</option><option value="left">Kiri</option><option value="center">Tengah</option><option value="right">Kanan</option>'; alignLabel.appendChild(align); row.appendChild(alignLabel);
+    const sizeLabel = doc.createElement('label'); sizeLabel.textContent = 'Ukuran (pt)';
+    const size = doc.createElement('input'); size.type = 'number'; size.min = '6'; size.max = '36'; size.step = '0.5'; sizeLabel.appendChild(size); row.appendChild(sizeLabel);
+    columnSettings.appendChild(row); columnControlRows.push({ index, align, size });
+    const update = () => { cell.style.textAlign = align.value; cell.style.fontSize = size.value ? `${size.value}pt` : ''; saveLayout(); };
+    align.addEventListener('input', update); size.addEventListener('input', update);
+  });
+  let selected = null;
+  const translate = (el) => { const matrix = new DOMMatrix(getComputedStyle(el).transform); return { x: matrix.m41 || 0, y: matrix.m42 || 0 }; };
+  const setTranslate = (el, x, y) => { el.style.transform = `translate(${x}px,${y}px)`; };
+  const syncInspector = () => {
+    const label = doc.getElementById('archive-selected-label');
+    label.textContent = selected ? (selected.matches('.signature') ? selected.innerText.split('\\n')[0] : selected.tagName.toLowerCase()) : 'Belum ada elemen dipilih';
+    for (const el of blocks()) el.classList.toggle('is-selected', el === selected);
+    const fields = [['archive-x','x'],['archive-y','y']];
+    const pos = selected ? translate(selected) : {x:0,y:0};
+    for (const [id,key] of fields) doc.getElementById(id).value = Math.round(pos[key]);
+    doc.getElementById('archive-width').value = selected ? Math.round(selected.getBoundingClientRect().width) : '';
+    doc.getElementById('archive-height').value = selected ? Math.round(selected.getBoundingClientRect().height) : '';
+    doc.getElementById('archive-selected-font').value = selected ? (parseFloat(getComputedStyle(selected).fontSize)*72/96).toFixed(1) : '';
+    doc.getElementById('archive-align').value = selected?.style.textAlign || '';
+    doc.getElementById('archive-body-align').value = archiveTable.dataset.bodyAlign || 'left';
+    const isTable = selected === archiveTable;
+    doc.getElementById('archive-body-align').closest('.archive-layout-grid').hidden = !isTable;
+    columnSettings.hidden = !isTable;
+    columnControlRows.forEach(({ index, align, size }) => { align.value = archiveTable.rows[0].cells[index].style.textAlign || ''; size.value = parseFloat(archiveTable.rows[0].cells[index].style.fontSize) * (archiveTable.rows[0].cells[index].style.fontSize.endsWith('pt') ? 1 : 0.75) || ''; });
+  };
+  const saveLayout = (makeDefault = false) => {
+    const store = getLayout();
+    const layout = { page: { orientation: doc.getElementById('archive-orientation').value, marginTop: doc.getElementById('archive-margin-top').value, marginRight: doc.getElementById('archive-margin-right').value, marginBottom: doc.getElementById('archive-margin-bottom').value, marginLeft: doc.getElementById('archive-margin-left').value, fontSize: doc.getElementById('archive-font-size').value }, blocks: blocks().map((el) => ({ transform: el.style.transform, width: el.style.width, height: el.style.height, textAlign: el.style.textAlign, fontSize: el.style.fontSize, bodyAlign: el.matches('table') ? el.dataset.bodyAlign || '' : undefined, columns: el.matches('table') ? [...el.rows[0].cells].map((cell) => ({ width: cell.style.width, textAlign: cell.style.textAlign, fontSize: cell.style.fontSize })) : undefined, rows: el.matches('table') ? [...el.rows].map((row) => row.style.height) : undefined })) };
+    store[layoutName] = layout;
+    if (makeDefault) { store.defaults ||= {}; store.defaults[layoutName] = layout; }
+    try { localStorage.setItem(layoutKey, JSON.stringify(store)); } catch {}
+  };
+  const store = getLayout();
+  const stored = store.defaults?.[layoutName] || store[layoutName];
+  if (stored) {
+    const p = stored.page || {};
+    doc.getElementById('archive-orientation').value = p.orientation || 'landscape';
+    for (const key of ['marginTop','marginRight','marginBottom','marginLeft','fontSize']) if (p[key]) doc.getElementById(`archive-${key.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)}`).value = p[key];
+    (stored.blocks || []).forEach((entry, i) => {
+      const el = blocks()[i];
+      if (!el) return;
+      Object.assign(el.style, { transform: entry.transform || '', width: entry.width || '', height: entry.height || '', textAlign: entry.textAlign || '', fontSize: entry.fontSize || '' });
+      if (el.matches('table')) {
+        el.dataset.bodyAlign = entry.bodyAlign || 'left';
+        [...el.rows].slice(1).forEach((row) => [...row.cells].forEach((cell) => { cell.style.textAlign = el.dataset.bodyAlign; }));
+        (entry.columns || []).forEach((setting, column) => {
+          const columnSettings = typeof setting === 'string' ? { width: setting } : setting;
+          [...el.rows].forEach((row) => {
+            const cell = row.cells[column]; if (!cell) return;
+            if (columnSettings.width) cell.style.width = columnSettings.width;
+            if (cell.tagName === 'TH') { cell.style.textAlign = columnSettings.textAlign || ''; cell.style.fontSize = columnSettings.fontSize || ''; }
+          });
+        });
+        (entry.rows || []).forEach((height, row) => { if (el.rows[row] && height) el.rows[row].style.height = height; });
+      }
+    });
+  }
+  const updatePage = () => {
+    const orientation = doc.getElementById('archive-orientation').value;
+    const top = Number(doc.getElementById('archive-margin-top').value) || 0;
+    const right = Number(doc.getElementById('archive-margin-right').value) || 0;
+    const bottom = Number(doc.getElementById('archive-margin-bottom').value) || 0;
+    const left = Number(doc.getElementById('archive-margin-left').value) || 0;
+    const size = Number(doc.getElementById('archive-font-size').value) || 10;
+    doc.querySelector('#archive-page-style')?.remove();
+    const style = doc.createElement('style'); style.id = 'archive-page-style';
+    style.textContent = `@page{size:A4 ${orientation};margin:${top}mm ${right}mm ${bottom}mm ${left}mm}.print-sheet{width:${orientation === 'landscape' ? '297mm' : '210mm'};min-height:${orientation === 'landscape' ? '210mm' : '297mm'}}#print-sheet{font-size:${size}pt}`; doc.head.appendChild(style);
+  };
+  doc.querySelectorAll('#archive-orientation,#archive-margin-top,#archive-margin-right,#archive-margin-bottom,#archive-margin-left,#archive-font-size').forEach((el) => el.addEventListener('input', updatePage));
+  doc.getElementById('archive-body-align').addEventListener('input', (event) => { archiveTable.dataset.bodyAlign = event.target.value; [...archiveTable.rows].slice(1).forEach((row) => [...row.cells].forEach((cell) => { cell.style.textAlign = event.target.value; })); saveLayout(); });
+  doc.getElementById('archive-edit-layout').addEventListener('click', (event) => { const active = doc.body.classList.toggle('layout-editing'); event.currentTarget.classList.toggle('is-active', active); event.currentTarget.textContent = active ? 'Selesai Edit' : 'Edit Layout'; if (!active) selected = null; syncInspector(); });
+  doc.getElementById('archive-layout-editor').addEventListener('toggle', (event) => doc.body.classList.toggle('layout-panel-open', event.target.open));
+  for (const [id,prop,unit] of [['archive-x','x','px'],['archive-y','y','px'],['archive-width','width','px'],['archive-height','height','px'],['archive-selected-font','fontSize','pt'],['archive-align','textAlign','']]) {
+    doc.getElementById(id).addEventListener('input', (event) => {
+      if (!selected) return;
+      const value = event.target.value;
+      if (prop === 'x' || prop === 'y') { const p = translate(selected); setTranslate(selected, prop === 'x' ? Number(value)||0 : p.x, prop === 'y' ? Number(value)||0 : p.y); }
+      else selected.style[prop] = value ? `${value}${unit}` : '';
+      saveLayout();
+      syncInspector();
+    });
+  }
+  let drag;
+  const resizeAt = (event) => {
+    const cell = event.target.closest('th,td');
+    if (!cell) return null;
+    const table = cell.closest('table.layout-block');
+    if (!table) return null;
+    const rect = cell.getBoundingClientRect();
+    if (cell.tagName === 'TH' && Math.abs(event.clientX - rect.right) <= 8) {
+      const column = cell.cellIndex;
+      return { type: 'column', table, column, start: event.clientX, widths: [...table.rows[0].cells].map((item) => item.getBoundingClientRect().width) };
+    }
+    const row = cell.closest('tr');
+    const rowRect = row.getBoundingClientRect();
+    if (Math.abs(event.clientY - rowRect.bottom) <= 6) return { type: 'row', table, row: row.rowIndex, start: event.clientY, height: rowRect.height };
+    return null;
+  };
+  doc.addEventListener('mousedown', (event) => {
+    if (!doc.body.classList.contains('layout-editing') || event.target.closest('.print-toolbar')) return;
+    const resize = resizeAt(event);
+    if (resize) {
+      selected = resize.table;
+      drag = resize;
+      doc.body.style.cursor = resize.type === 'column' ? 'col-resize' : 'row-resize';
+      syncInspector();
+      event.preventDefault();
+      return;
+    }
+    const block = event.target.closest('.layout-block');
+    if (!block) return;
+    selected = block; syncInspector();
+    const p = translate(block);
+    drag = { type: 'move', block, x: event.clientX, y: event.clientY, startX:p.x, startY:p.y };
+    event.preventDefault();
+  });
+  doc.addEventListener('mousemove', (event) => {
+    if (!drag) {
+      if (doc.body.classList.contains('layout-editing')) {
+        const edge = resizeAt(event);
+        doc.body.style.cursor = edge ? (edge.type === 'column' ? 'col-resize' : 'row-resize') : '';
+      }
+      return;
+    }
+    if (drag.type === 'move') setTranslate(drag.block, drag.startX + event.clientX - drag.x, drag.startY + event.clientY - drag.y);
+    if (drag.type === 'column') {
+      const width = Math.max(36, drag.widths[drag.column] + event.clientX - drag.start);
+      [...drag.table.rows].forEach((row) => { if (row.cells[drag.column]) row.cells[drag.column].style.width = `${width}px`; });
+    }
+    if (drag.type === 'row') drag.table.rows[drag.row].style.height = `${Math.max(20, drag.height + event.clientY - drag.start)}px`;
+    syncInspector();
+  });
+  doc.addEventListener('mouseup', () => { if (drag) saveLayout(); drag = null; doc.body.style.cursor = ''; });
+  doc.getElementById('archive-save-layout').addEventListener('click', () => { saveLayout(true); showToast('Layout arsip dijadikan default.'); });
+  doc.getElementById('archive-reset-layout').addEventListener('click', () => { const store = getLayout(); delete store[layoutName]; if (store.defaults) delete store.defaults[layoutName]; localStorage.setItem(layoutKey, JSON.stringify(store)); printWindow.location.reload(); });
+  doc.getElementById('archive-print-now').addEventListener('click', () => { updatePage(); printWindow.focus(); printWindow.print(); });
+  doc.getElementById('archive-close-preview').addEventListener('click', () => printWindow.close());
+  updatePage();
 }
 
 function handleAction(action, element) {
   if (action === 'new-task') openTaskForm();
   if (action === 'edit-task') openTaskForm(element.dataset.id);
   if (action === 'download-task') downloadTask(element.dataset.id);
+  if (action === 'delete-task') deleteRecord('tasks', element.dataset.id, 'surat tugas');
   if (action === 'new-incoming') openIncomingForm();
+  if (action === 'edit-incoming') openIncomingForm(element.dataset.id);
+  if (action === 'delete-incoming') deleteRecord('incoming', element.dataset.id, 'surat masuk');
   if (action === 'new-outgoing') openOutgoingForm();
   if (action === 'edit-outgoing') openOutgoingForm(element.dataset.id);
+  if (action === 'delete-outgoing') deleteRecord('outgoing', element.dataset.id, 'surat keluar');
   if (action === 'close-dialog') document.getElementById('record-dialog').close();
   if (action === 'close-print-dialog') document.getElementById('print-dialog').close();
+  if (action === 'close-attachment-preview') closeAttachmentPreview();
   if (action === 'print-options') openPrintOptions(element.dataset.id);
   if (action === 'print-archive') printArchive(element.dataset.archiveType);
   if (action === 'open-incoming-file') {
     const record = state.incoming.find((row) => row.id === element.dataset.id);
-    try { const file = JSON.parse(record.attachment); const link = document.createElement('a'); link.href = file.data; link.target = '_blank'; link.rel = 'noopener'; link.download = file.name; link.click(); } catch (_) { showToast('Berkas tidak dapat dibuka.'); }
+    openAttachment(record?.attachment);
+  }
+  if (action === 'open-outgoing-file') {
+    const record = state.outgoing.find((row) => row.id === element.dataset.id);
+    openAttachment(record?.attachment);
   }
   if (action === 'delete-official') { state.officialsMaster.splice(Number(element.dataset.id), 1); saveState(); }
   if (action === 'download-teacher-template') downloadRosterTemplate('teachers');
@@ -2430,6 +2691,132 @@ function handleAction(action, element) {
   if (action === 'migrate-to-spreadsheet') migrateToSpreadsheet();
   if (action === 'reconnect-spreadsheet') reconnectSpreadsheet();
   if (action === 'test-spreadsheet') testSpreadsheetConnection();
+}
+
+let attachmentPreviewTask = null;
+let attachmentPreviewUrl = null;
+let pdfJsPromise = null;
+
+function loadPdfJs() {
+  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  if (!pdfJsPromise) {
+    pdfJsPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      script.onload = () => window.pdfjsLib
+        ? resolve(window.pdfjsLib)
+        : reject(new Error('Pustaka tinjauan PDF tidak tersedia.'));
+      script.onerror = () => {
+        pdfJsPromise = null;
+        reject(new Error('Pustaka tinjauan PDF gagal dimuat.'));
+      };
+      document.head.append(script);
+    });
+  }
+  return pdfJsPromise;
+}
+
+function openAttachment(attachment) {
+  try {
+    const file = JSON.parse(attachment);
+    if (!file?.data) throw new Error('Data berkas tidak tersedia.');
+    const match = /^data:([^;,]+)?(?:;[^,]*)?;base64,(.+)$/s.exec(file.data);
+    if (!match) throw new Error('Format berkas tidak valid.');
+    const mimeType = match[1] || file.type || 'application/octet-stream';
+    const bytes = Uint8Array.from(atob(match[2]), (char) => char.charCodeAt(0));
+    const dialog = document.getElementById('attachment-preview-dialog');
+    const body = document.getElementById('attachment-preview-body');
+    const title = document.getElementById('attachment-preview-title');
+    attachmentPreviewTask?.destroy();
+    attachmentPreviewTask = null;
+    if (attachmentPreviewUrl) URL.revokeObjectURL(attachmentPreviewUrl);
+    attachmentPreviewUrl = null;
+    dialog.onclose = () => {
+      attachmentPreviewTask?.destroy();
+      attachmentPreviewTask = null;
+      if (attachmentPreviewUrl) URL.revokeObjectURL(attachmentPreviewUrl);
+      attachmentPreviewUrl = null;
+      body.replaceChildren();
+    };
+    title.textContent = file.name || 'Berkas surat';
+    body.replaceChildren();
+
+    if (mimeType === 'application/pdf') {
+      renderPdfPreview(bytes, body);
+    } else if (mimeType.startsWith('image/')) {
+      attachmentPreviewUrl = URL.createObjectURL(new Blob([bytes], { type: mimeType }));
+      const image = document.createElement('img');
+      image.alt = file.name || 'Lampiran surat';
+      image.src = attachmentPreviewUrl;
+      body.append(image);
+    } else {
+      const message = document.createElement('p');
+      message.className = 'attachment-preview-message';
+      message.textContent = `Pratinjau di aplikasi tersedia untuk PDF dan gambar. Berkas “${file.name || 'tanpa nama'}” dapat dibuka dengan aplikasi yang mendukung format ${mimeType}.`;
+      body.append(message);
+    }
+
+    dialog.showModal();
+  } catch (_) {
+    showToast('Berkas tidak dapat dibuka.');
+  }
+}
+
+async function renderPdfPreview(bytes, body) {
+  const message = document.createElement('p');
+  message.className = 'attachment-preview-message';
+  message.textContent = 'Memuat tinjauan PDF…';
+  body.append(message);
+
+  try {
+    const pdfjsLib = await loadPdfJs();
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    attachmentPreviewTask?.destroy();
+    attachmentPreviewTask = pdfjsLib.getDocument({ data: bytes });
+    const pdf = await attachmentPreviewTask.promise;
+    if (!document.getElementById('attachment-preview-dialog').open || !body.isConnected) {
+      await attachmentPreviewTask.destroy();
+      attachmentPreviewTask = null;
+      return;
+    }
+
+    body.replaceChildren();
+    for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+      const page = await pdf.getPage(pageNumber);
+      const baseViewport = page.getViewport({ scale: 1 });
+      const availableWidth = Math.max(280, body.clientWidth - 32);
+      const scale = Math.min(1.6, availableWidth / baseViewport.width);
+      const viewport = page.getViewport({ scale });
+      const canvas = document.createElement('canvas');
+      canvas.setAttribute('aria-label', `Halaman ${pageNumber} dari ${pdf.numPages}`);
+      canvas.width = Math.ceil(viewport.width);
+      canvas.height = Math.ceil(viewport.height);
+      body.append(canvas);
+      await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+      if (!document.getElementById('attachment-preview-dialog').open) break;
+    }
+  } catch (error) {
+    body.replaceChildren();
+    message.textContent = 'Tinjauan PDF gagal dimuat. Periksa koneksi internet, lalu buka kembali lampiran.';
+    body.append(message);
+  }
+}
+
+function closeAttachmentPreview() {
+  document.getElementById('attachment-preview-dialog').close();
+}
+
+function deleteRecord(collection, id, label) {
+  const records = state[collection];
+  const index = records.findIndex((record) => record.id === id);
+  if (index < 0) return;
+  const record = records[index];
+  const reference = record.number || record.letterNumber || record.subject || label;
+  if (!window.confirm(`Hapus ${label} “${reference}” dari arsip? Tindakan ini tidak dapat dibatalkan.`)) return;
+  records.splice(index, 1);
+  if (collection === 'tasks') state.incoming = state.incoming.filter((entry) => entry.sourceTaskId !== record.id);
+  saveState();
+  showToast(`${label[0].toUpperCase()}${label.slice(1)} berhasil dihapus.`);
 }
 
 function importBackup(file) {
@@ -2664,6 +3051,9 @@ document.getElementById('official-master-form').addEventListener('submit', async
 document.addEventListener('change', (event) => {
   if (event.target.matches('[data-person-select]')) updateAssignmentDetails(event.target);
 });
+document.addEventListener('input', (event) => {
+  if (event.target.matches('[data-student-search]')) filterStudentOptions(event.target);
+});
   document.getElementById('teacher-master-input').addEventListener('change', (event) => {
   const [file] = event.target.files;
   if (file) importMasterCsv(file, 'teachers');
@@ -2677,6 +3067,8 @@ document.getElementById('student-master-input').addEventListener('change', (even
 document.getElementById('archive-search').addEventListener('input', renderArchive);
 document.getElementById('archive-year').addEventListener('change', renderArchive);
 document.getElementById('agenda-search').addEventListener('input', renderAgenda);
+document.getElementById('agenda-sort').addEventListener('change', renderAgenda);
+document.getElementById('agenda-month').addEventListener('change', renderAgenda);
 document.getElementById('backup-input').addEventListener('change', (event) => {
   const [file] = event.target.files;
   if (file) importBackup(file);

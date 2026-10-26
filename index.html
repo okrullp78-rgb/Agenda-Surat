@@ -17,9 +17,9 @@
       </a>
       <div class="sidebar-caption">PERSURATAN</div>
       <nav class="primary-nav" aria-label="Navigasi utama">
-        <button class="nav-link is-active" data-page="overview"><span class="nav-glyph">⌂</span>Ringkasan</button>
-        <button class="nav-link" data-page="archive"><span class="nav-glyph">▤</span>Arsip surat tugas</button>
-        <button class="nav-link" data-page="agenda"><span class="nav-glyph">▦</span>Agenda surat</button>
+        <button class="nav-link is-active" data-page="overview"><span class="nav-glyph">⌂</span>Dashboard</button>
+        <button class="nav-link" data-page="archive"><span class="nav-glyph">▤</span>Arsip Surat Tugas</button>
+        <button class="nav-link" data-page="agenda"><span class="nav-glyph">▦</span>Agenda Surat</button>
       </nav>
       <div class="sidebar-bottom">
         <button class="nav-link" data-page="settings"><span class="nav-glyph">⚙</span>Pengaturan & data</button>
@@ -29,7 +29,7 @@
 
     <main class="main-area">
       <header class="topbar">
-        <div class="breadcrumb"><span>Administrasi</span><span class="breadcrumb-slash">/</span><strong id="page-breadcrumb">Ringkasan</strong></div>
+        <div class="breadcrumb"><span>Administrasi</span><span class="breadcrumb-slash">/</span><strong id="page-breadcrumb">Dashboard</strong></div>
         <div class="topbar-actions">
           <span class="today-label" id="today-label"></span>
           <button class="button button-primary button-small" data-action="new-task"><span class="button-plus">+</span> Surat tugas</button>
@@ -73,7 +73,7 @@
 
       <section class="page" id="page-archive" aria-labelledby="archive-title">
         <div class="page-heading">
-          <div><p class="eyebrow">DOKUMEN TERBIT</p><h1 id="archive-title">Arsip surat tugas</h1><p class="heading-note">Nomor, petugas, dan rincian kegiatan dalam satu daftar.</p></div>
+          <div><p class="eyebrow">DOKUMEN TERBIT</p><h1 id="archive-title">Arsip Surat Tugas</h1><p class="heading-note">Nomor, petugas, dan rincian kegiatan dalam satu daftar.</p></div>
           <div class="heading-actions"><button class="button button-primary" data-action="new-task"><span class="button-plus">+</span> Buat surat tugas</button></div>
         </div>
         <div class="toolbar">
@@ -86,7 +86,7 @@
 
       <section class="page" id="page-agenda" aria-labelledby="agenda-title">
         <div class="page-heading">
-          <div><p class="eyebrow">SURAT MASUK & KELUAR</p><h1 id="agenda-title">Agenda surat</h1><p class="heading-note">Rekap korespondensi untuk pencatatan dan ekspor.</p></div>
+          <div><p class="eyebrow">SURAT MASUK & KELUAR</p><h1 id="agenda-title">Agenda Surat</h1><p class="heading-note">Rekap korespondensi untuk pencatatan dan ekspor.</p></div>
           <button class="button button-primary" id="agenda-add-button" data-action="new-incoming"><span class="button-plus">+</span> Catat surat masuk</button>
         </div>
         <div class="agenda-controls">
@@ -96,9 +96,10 @@
           </div>
           <div class="toolbar-inline">
             <label class="search-field search-compact"><span aria-hidden="true">⌕</span><input id="agenda-search" type="search" placeholder="Cari agenda..." aria-label="Cari agenda surat"></label>
+            <label class="select-label"><span>Urutan</span><select id="agenda-sort" aria-label="Urutan tanggal"><option value="desc">Terbaru</option><option value="asc">Terlama</option></select></label>
+            <label class="select-label"><span>Bulan</span><select id="agenda-month" aria-label="Filter bulan"><option value="all">Semua bulan</option></select></label>
             <button class="button button-outline" id="print-incoming-button" data-action="print-archive" data-archive-type="incoming">Cetak surat masuk</button>
             <button class="button button-outline" id="print-outgoing-button" data-action="print-archive" data-archive-type="outgoing" hidden>Cetak surat keluar</button>
-            <button class="button button-outline" id="print-task-button" data-action="print-archive" data-archive-type="task" hidden>Cetak surat tugas</button>
             <button class="button button-outline" data-action="export-agenda"><span aria-hidden="true">↓</span> Ekspor CSV</button>
           </div>
         </div>
@@ -169,6 +170,7 @@
     <button class="print-option" data-print-type="transport"><span class="print-option-number">06</span><span><strong>Daftar Penyerahan Transport</strong><small>Pegawai yang diberi tugas</small></span><span class="print-option-arrow">↗</span></button>
     <button class="print-option" data-print-type="transport-students"><span class="print-option-number">07</span><span><strong>Daftar Penyerahan Transport Siswa</strong><small>Peserta didik yang diberi tugas</small></span><span class="print-option-arrow">↗</span></button>
   </div></div></dialog>
+  <dialog id="attachment-preview-dialog" class="record-dialog attachment-preview-dialog" aria-labelledby="attachment-preview-title"><div class="dialog-frame"><header class="dialog-header"><div><p class="eyebrow">TINJAUAN LAMPIRAN</p><h2 id="attachment-preview-title">Berkas surat</h2></div><button type="button" class="icon-button" data-action="close-attachment-preview" aria-label="Tutup">×</button></header><div class="attachment-preview-body" id="attachment-preview-body"></div></div></dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </body>
 </html>
